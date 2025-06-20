@@ -102,7 +102,7 @@ export default function LandingPage() {
             <h1 className="text-6xl md:text-8xl font-bold text-white mb-8 leading-tight tracking-tight">
               Bringing Local
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
-                Flavor Home
+                Flavours Home
               </span>
             </h1>
 
