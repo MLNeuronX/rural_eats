@@ -1,4 +1,3 @@
-// Types
 export type OrderStatus = "NEW" | "CONFIRMED" | "PREPARING" | "READY" | "ASSIGNED" | "OUT_FOR_DELIVERY" | "DELIVERED"
 
 export interface MenuItem {
@@ -518,38 +517,17 @@ export async function deleteMenuItem(id: string) {
 }
 
 export async function createOrder(order: Omit<Order, "id" | "createdAt" | "updatedAt">) {
-  try {
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({
-        buyer_id: order.buyerId,
-        vendor_id: order.vendorId,
-        items: order.items.map(item => ({
-          menu_item_id: item.menuItemId,
-          quantity: item.quantity,
-          price_at_time: item.price
-        })),
-        status: order.status.toLowerCase(),
-        total_amount: order.total,
-        delivery_address: order.deliveryAddress
-      })
-    });
+  await new Promise((resolve) => setTimeout(resolve, 700))
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create order');
-    }
-
-    const data = await response.json();
-    return data.order;
-  } catch (error) {
-    console.error('Error creating order:', error);
-    throw error;
+  const newOrder: Order = {
+    ...order,
+    id: `o${orders.length + 1}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
+
+  orders.push(newOrder)
+  return newOrder
 }
 
 export async function updateVendorAvailability(id: string, isOpen: boolean) {

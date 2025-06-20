@@ -1,6 +1,3 @@
-// Stripe Connect integration for marketplace payments
-// This handles the automatic payment splitting between vendor, platform, and driver
-
 export interface PaymentSplit {
   vendorAmount: number // 90% of order total
   platformAmount: number // 10% of order total

@@ -83,15 +83,15 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   }
 
   return (
-      <div className="container max-w-md mx-auto px-4 py-6">
+    <div className="container max-w-md mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
-          <Link href="/buyer/orders">
-            <Button variant="ghost" size="icon" className="h-8 w-8 mr-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+        <Link href="/buyer/orders">
+          <Button variant="ghost" size="icon" className="h-8 w-8 mr-2">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
         <h1 className="text-2xl font-bold">Order #{order.id}</h1>
-                  </div>
+      </div>
 
       {whatsappLink && (
         <Card className="mb-4 border-green-200 bg-green-50">
@@ -99,62 +99,62 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             <div className="flex items-center gap-2 mb-2">
               <MessageCircle className="h-4 w-4 text-green-600" />
               <span className="font-medium text-green-800">Contact Restaurant</span>
-                        </div>
+            </div>
             <p className="text-sm text-green-700 mb-3">
               Your order has been placed! Contact the restaurant for updates.
             </p>
             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="bg-green-600 hover:bg-green-700">
                 Message on WhatsApp
-                    </Button>
-                  </a>
-              </CardContent>
-            </Card>
-        )}
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-4">
-              <CardHeader>
+        <CardHeader>
           <CardTitle className="text-lg">Order Status</CardTitle>
-              </CardHeader>
-              <CardContent>
+        </CardHeader>
+        <CardContent>
           <OrderStatusTimeline status={order.status} />
-              </CardContent>
-            </Card>
+        </CardContent>
+      </Card>
 
       <Card className="mb-4">
-            <CardHeader>
+        <CardHeader>
           <CardTitle className="text-lg">Order Details</CardTitle>
-            </CardHeader>
+        </CardHeader>
         <CardContent className="space-y-3">
-              {order.items.map((item, index) => (
+          {order.items.map((item, index) => (
             <div key={index} className="flex justify-between">
               <span>
-                      {item.quantity}x {item.name}
-                    </span>
+                {item.quantity}x {item.name}
+              </span>
               <span>${(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
+            </div>
+          ))}
 
           <Separator />
 
           <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
-                </div>
+            <span>Subtotal</span>
+            <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
+          </div>
 
           <div className="flex justify-between">
-                  <span>Delivery Fee</span>
-                  <span>${order.deliveryFee.toFixed(2)}</span>
-                </div>
+            <span>Delivery Fee</span>
+            <span>${order.deliveryFee.toFixed(2)}</span>
+          </div>
 
           <Separator />
 
           <div className="flex justify-between font-medium">
-                  <span>Total</span>
+            <span>Total</span>
             <span>${order.total.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -185,7 +185,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                 minute: "2-digit",
               })}
             </p>
-      </div>
+          </div>
         </CardContent>
       </Card>
     </div>
