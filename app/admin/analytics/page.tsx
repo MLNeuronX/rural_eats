@@ -50,8 +50,6 @@ const orderTrends = [
 
 const cuisineDistribution = [
   { name: "American", value: 30, color: "#8884d8" },
-  { name: "Mexican", value: 20, color: "#82ca9d" },\
-  { name: "Italian\", value: 15, color: \"#ffc658\" },  },
   { name: "Mexican", value: 20, color: "#82ca9d" },
   { name: "Italian", value: 15, color: "#ffc658" },
   { name: "Asian", value: 18, color: "#ff7300" },
