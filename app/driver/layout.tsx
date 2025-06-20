@@ -1,28 +1,17 @@
-"use client"
-
 import type React from "react"
+import { DriverHeader } from "@/components/driver/driver-header"
 
-import { useAuth } from "@/components/providers/auth-provider"
-import { redirect } from "next/navigation"
+// Simplify the driver layout to remove authentication restrictions
 
 export default function DriverLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading } = useAuth()
-
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  if (user.role !== "driver") {
-    redirect("/")
-  }
-
-  return <>{children}</>
+  return (
+    <div className="min-h-screen bg-background">
+      <DriverHeader />
+      <main className="pb-6">{children}</main>
+    </div>
+  )
 }

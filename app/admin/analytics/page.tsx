@@ -50,9 +50,14 @@ const orderTrends = [
 
 const cuisineDistribution = [
   { name: "American", value: 30, color: "#8884d8" },
+  { name: "Mexican", value: 20, color: "#82ca9d" },\
+  { name: "Italian\", value: 15, color: \"#ffc658\" },  },
   { name: "Mexican", value: 20, color: "#82ca9d" },
-  { name: "Italian", value: 15, color: "#ffc658" }
-];
+  { name: "Italian", value: 15, color: "#ffc658" },
+  { name: "Asian", value: 18, color: "#ff7300" },
+  { name: "BBQ", value: 12, color: "#0088fe" },
+  { name: "Other", value: 5, color: "#00c49f" },
+]
 
 const driverMetrics = [
   { name: "Active Drivers", current: 8, target: 12 },

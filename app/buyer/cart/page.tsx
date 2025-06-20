@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react"
 import { useCart } from "@/components/buyer/cart-provider"
-import { getVendorById } from "@/lib/data"
+import { getVendorById, createOrder } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
 
 export default function CartPage() {
@@ -41,8 +41,61 @@ export default function CartPage() {
       return
     }
 
-    // Navigate to checkout page instead of creating order directly
-    router.push("/buyer/checkout")
+    if (!address) {
+      toast({
+        title: "Address required",
+        description: "Please enter a delivery address",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Create order
+      const order = await createOrder({
+        buyerId: user.id,
+        vendorId: vendorId!,
+        driverId: null,
+        items: items.map((item) => ({
+          menuItemId: item.menuItem.id,
+          name: item.menuItem.name,
+          price: item.menuItem.price,
+          quantity: item.quantity,
+        })),
+        status: "NEW",
+        total: total,
+        deliveryFee: vendor?.deliveryFee || 0,
+        deliveryAddress: address,
+        deliveryTime: deliveryTime,
+      })
+
+      // Clear cart
+      clearCart()
+
+      // Show success message
+      toast({
+        title: "Order placed!",
+        description: "Your order has been successfully placed.",
+      })
+
+      // Generate WhatsApp link
+      const whatsappMessage = `Hi! I just placed order #${order.id} for ${items.map((item) => `${item.quantity}x ${item.menuItem.name}`).join(", ")}. Please confirm my order.`
+      const whatsappLink = `https://wa.me/15551234567?text=${encodeURIComponent(whatsappMessage)}`
+
+      // Redirect to confirmation page
+      router.push(`/buyer/orders/${order.id}?whatsapp=${encodeURIComponent(whatsappLink)}`)
+    } catch (error) {
+      console.error("Error placing order:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem placing your order. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (items.length === 0) {
@@ -175,8 +228,8 @@ export default function CartPage() {
           </div>
         </CardContent>
         <CardFooter className="p-4 pt-0">
-          <Button className="w-full buyer-gradient text-white" onClick={handleCheckout} disabled={isLoading}>
-            {isLoading ? "Processing..." : "Proceed to Checkout"}
+          <Button className="w-full" onClick={handleCheckout} disabled={isLoading}>
+            {isLoading ? "Processing..." : "Place Order"}
           </Button>
         </CardFooter>
       </Card>

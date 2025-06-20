@@ -1,28 +1,18 @@
-"use client"
-
 import type React from "react"
-
-import { useAuth } from "@/components/providers/auth-provider"
-import { redirect } from "next/navigation"
+import { BuyerBottomNav } from "@/components/buyer/bottom-nav"
+import { CartProvider } from "@/components/buyer/cart-provider"
 
 export default function BuyerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading } = useAuth()
-
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  if (user.role !== "buyer") {
-    redirect("/")
-  }
-
-  return <>{children}</>
+  return (
+    <CartProvider>
+      <div className="min-h-screen pb-16">
+        {children}
+        <BuyerBottomNav />
+      </div>
+    </CartProvider>
+  )
 }
