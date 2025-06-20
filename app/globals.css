@@ -1,0 +1,429 @@
+body { background: red !important; }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+
+    /* 🧍‍♂️ Buyer Portal Colors - Appetite & Action */
+    --buyer-primary: 45 100% 51%; /* Amber Yellow #FFC107 */
+    --buyer-accent: 4 90% 58%; /* Tomato Red #F44336 */
+    --buyer-background: 48 100% 94%; /* Ivory #FFF8E1 */
+
+    /* 🏪 Vendor Portal Colors - Profit & Control */
+    --vendor-primary: 120 45% 31%; /* Forest Green #2E7D32 */
+    --vendor-accent: 50 100% 50%; /* Deep Gold #FFD600 */
+    --vendor-background: 84 100% 95%; /* Parchment #F1F8E9 */
+
+    /* 🚚 Driver Portal Colors - Gamification & Reward */
+    --driver-primary: 199 98% 48%; /* Electric Blue #03A9F4 */
+    --driver-accent: 73 100% 50%; /* Lime Green #C6FF00 */
+    --driver-accent-alt: 36 100% 50%; /* Orange #FF9800 */
+    --driver-background: 200 13% 19%; /* Dark Slate #263238 */
+
+    /* 👑 Admin Portal Colors - Oversight & Calm */
+    --admin-primary: 200 18% 46%; /* Slate Grey #607D8B */
+    --admin-accent: 231 48% 48%; /* Indigo #3F51B5 */
+    --admin-background: 195 14% 95%; /* Light Grey #ECEFF1 */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 🧍‍♂️ Buyer Portal Utilities - Appetite & Action */
+.buyer-primary {
+  color: hsl(var(--buyer-primary));
+}
+.bg-buyer-primary {
+  background-color: hsl(var(--buyer-primary));
+}
+.buyer-accent {
+  color: hsl(var(--buyer-accent));
+}
+.bg-buyer-accent {
+  background-color: hsl(var(--buyer-accent));
+}
+.bg-buyer-background {
+  background-color: hsl(var(--buyer-background));
+}
+.buyer-gradient {
+  background: linear-gradient(135deg, hsl(var(--buyer-primary)) 0%, hsl(var(--buyer-accent)) 100%);
+}
+
+/* 🏪 Vendor Portal Utilities - Profit & Control */
+.vendor-primary {
+  color: hsl(var(--vendor-primary));
+}
+.bg-vendor-primary {
+  background-color: hsl(var(--vendor-primary));
+}
+.vendor-accent {
+  color: hsl(var(--vendor-accent));
+}
+.bg-vendor-accent {
+  background-color: hsl(var(--vendor-accent));
+}
+.bg-vendor-background {
+  background-color: hsl(var(--vendor-background));
+}
+.vendor-gradient {
+  background: linear-gradient(135deg, hsl(var(--vendor-primary)) 0%, hsl(var(--vendor-accent)) 100%);
+}
+
+/* 🚚 Driver Portal Utilities - Gamification & Reward */
+.driver-primary {
+  color: hsl(var(--driver-primary));
+}
+.bg-driver-primary {
+  background-color: hsl(var(--driver-primary));
+}
+.driver-accent {
+  color: hsl(var(--driver-accent));
+}
+.bg-driver-accent {
+  background-color: hsl(var(--driver-accent));
+}
+.driver-accent-alt {
+  color: hsl(var(--driver-accent-alt));
+}
+.bg-driver-accent-alt {
+  background-color: hsl(var(--driver-accent-alt));
+}
+.bg-driver-background {
+  background-color: hsl(var(--driver-background));
+}
+.driver-gradient {
+  background: linear-gradient(135deg, hsl(var(--driver-primary)) 0%, hsl(var(--driver-accent)) 100%);
+}
+
+/* 👑 Admin Portal Utilities - Oversight & Calm */
+.admin-primary {
+  color: hsl(var(--admin-primary));
+}
+.bg-admin-primary {
+  background-color: hsl(var(--admin-primary));
+}
+.admin-accent {
+  color: hsl(var(--admin-accent));
+}
+.bg-admin-accent {
+  background-color: hsl(var(--admin-accent));
+}
+.bg-admin-background {
+  background-color: hsl(var(--admin-background));
+}
+.admin-gradient {
+  background: linear-gradient(135deg, hsl(var(--admin-primary)) 0%, hsl(var(--admin-accent)) 100%);
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground));
+}
+
+/* Animations */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-10px) rotate(120deg);
+  }
+  66% {
+    transform: translateY(5px) rotate(240deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  }
+}
+
+@keyframes xp-gain {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes progress-ring {
+  0% {
+    stroke-dasharray: 0 100;
+  }
+  100% {
+    stroke-dasharray: var(--progress) 100;
+  }
+}
+
+@keyframes check-mark {
+  0% {
+    stroke-dasharray: 0 50;
+  }
+  100% {
+    stroke-dasharray: 50 50;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.floating-particle {
+  animation: float 6s ease-in-out infinite;
+}
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.bounce-in {
+  animation: bounce-in 0.6s ease-out;
+}
+.slide-in {
+  animation: slide-in 0.5s ease-out;
+}
+.fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+.glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+.xp-gain {
+  animation: xp-gain 1s ease-out forwards;
+}
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+.progress-ring {
+  animation: progress-ring 1s ease-out forwards;
+}
+.check-mark {
+  animation: check-mark 0.5s ease-out forwards;
+}
+.rotate {
+  animation: rotate 2s linear infinite;
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Role-specific button hover effects */
+.buyer-button:hover {
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.25);
+}
+
+.vendor-button:hover {
+  box-shadow: 0 8px 25px rgba(46, 125, 50, 0.25);
+}
+
+.driver-button:hover {
+  box-shadow: 0 8px 25px rgba(3, 169, 244, 0.25);
+}
+
+.admin-button:hover {
+  box-shadow: 0 8px 25px rgba(96, 125, 139, 0.25);
+}
+
+/* Staggered animation delays */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+
+/* Micro-interaction effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Cinematic text effects */
+.cinematic-text {
+  background: linear-gradient(45deg, #ffffff, #f0f0f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
