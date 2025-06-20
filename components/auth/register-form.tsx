@@ -79,7 +79,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
             ? "Your application has been submitted for review. You'll receive an email within 24-48 hours."
             : role === "driver"
               ? "Please complete your driver onboarding process."
-              : "Welcome to Rural Eats! Please set up your payment method.",
+              : "Welcome to Rural Drop! Please set up your payment method.",
       })
 
       // Route based on role

@@ -64,7 +64,7 @@ export default function LandingPage() {
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center">
               <FernLogo size="sm" className="text-white" animated />
             </div>
-            <span className="text-2xl font-bold text-white">Rural Eats</span>
+            <span className="text-2xl font-bold text-white">Rural Drop</span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -240,7 +240,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-lg flex items-center justify-center">
               <FernLogo size="sm" className="text-white" />
             </div>
-            <span className="text-xl font-bold text-white">Rural Eats</span>
+            <span className="text-xl font-bold text-white">Rural Drop</span>
           </div>
           <div className="mb-4">
             <Link href="/" className="text-white/40 hover:text-white/60 transition-colors text-sm">
