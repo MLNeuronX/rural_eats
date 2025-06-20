@@ -1,28 +1,45 @@
 "use client"
 
-import type React from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
+import { LogOut, Truck } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
-const DriverHeader: React.FC = () => {
-  const { user } = useAuth()
+export function DriverHeader() {
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const [isOnline, setIsOnline] = useState(true)
+
+  const handleLogout = () => {
+    logout()
+    router.push("/")
+  }
+
+  const toggleOnlineStatus = () => {
+    setIsOnline(!isOnline)
+  }
 
   return (
-    <header className="bg-gray-100 py-4">
-      <div className="container mx-auto flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Driver Dashboard</h1>
-        {user ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-700">
-              Welcome, {user.firstName} {user.lastName}!
-            </span>
-            {/* Add any other user-related information or actions here */}
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container max-w-4xl mx-auto flex h-14 items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <Truck className="h-5 w-5" />
+          <span className="font-semibold">Driver Portal</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Badge variant={isOnline ? "default" : "secondary"} className="cursor-pointer" onClick={toggleOnlineStatus}>
+              {isOnline ? "Online" : "Offline"}
+            </Badge>
           </div>
-        ) : (
-          <span className="text-gray-700">Not logged in</span>
-        )}
+          <span className="text-sm text-muted-foreground hidden sm:inline">{user?.name}</span>
+          <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </header>
   )
 }
-
-export default DriverHeader

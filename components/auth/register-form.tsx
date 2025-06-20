@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { registerVendor } from "@/app/vendor/api-calls"
 
 interface RegisterFormProps {
   role: "buyer" | "vendor" | "driver"
@@ -70,38 +69,31 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
     setIsLoading(true)
 
     try {
-      if (role === "vendor") {
-        // Call backend API for vendor registration
-        await registerVendor(
-          formData.email,
-          formData.password,
-          formData.businessName
-        )
-        toast({
-          title: "Registration successful!",
-          description: "Your application has been submitted for review. You'll receive an email within 24-48 hours.",
-        })
-        router.push("/vendor/application-submitted")
-      } else {
-        // Simulate API call for other roles
+      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000))
+
       toast({
         title: "Registration successful!",
         description:
-            role === "driver"
+          role === "vendor"
+            ? "Your application has been submitted for review. You'll receive an email within 24-48 hours."
+            : role === "driver"
               ? "Please complete your driver onboarding process."
               : "Welcome to Rural Eats! Please set up your payment method.",
       })
-        if (role === "driver") {
+
+      // Route based on role
+      if (role === "vendor") {
+        router.push("/vendor/application-submitted")
+      } else if (role === "driver") {
         router.push("/driver/onboarding")
       } else {
         router.push("/buyer/setup-payment")
       }
-      }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Registration failed",
-        description: error?.error || error?.message || "Please try again later",
+        description: "Please try again later",
         variant: "destructive",
       })
     } finally {

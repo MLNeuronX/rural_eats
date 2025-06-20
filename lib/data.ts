@@ -1,3 +1,4 @@
+// Types
 export type OrderStatus = "NEW" | "CONFIRMED" | "PREPARING" | "READY" | "ASSIGNED" | "OUT_FOR_DELIVERY" | "DELIVERED"
 
 export interface MenuItem {

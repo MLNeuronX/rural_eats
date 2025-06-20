@@ -1,5 +1,5 @@
 import type React from "react"
-import AdminSidebar from "@/components/admin/admin-sidebar"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
 
 // Simplify the admin layout to remove authentication restrictions
 

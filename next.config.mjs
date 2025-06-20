@@ -9,12 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    forceSwcTransforms: false,
-  },
-  webpack: (config, { isServer }) => {
-    return config;
-  },
 }
 
 export default nextConfig

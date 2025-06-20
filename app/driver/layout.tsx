@@ -1,5 +1,5 @@
 import type React from "react"
-import DriverHeader from "@/components/driver/driver-header"
+import { DriverHeader } from "@/components/driver/driver-header"
 
 // Simplify the driver layout to remove authentication restrictions
 
