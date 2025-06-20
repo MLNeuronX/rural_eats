@@ -11,11 +11,13 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting forgot password for:", email);
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
+    console.log("Response status:", res.status);
     if (res.ok) {
       setSent(true);
       toast({ title: "Check your email for a reset link." });
