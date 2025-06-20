@@ -84,19 +84,19 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
         router.push("/vendor/application-submitted")
       } else {
         // Simulate API call for other roles
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        toast({
-          title: "Registration successful!",
-          description:
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      toast({
+        title: "Registration successful!",
+        description:
             role === "driver"
               ? "Please complete your driver onboarding process."
               : "Welcome to Rural Eats! Please set up your payment method.",
-        })
+      })
         if (role === "driver") {
-          router.push("/driver/onboarding")
-        } else {
-          router.push("/buyer/setup-payment")
-        }
+        router.push("/driver/onboarding")
+      } else {
+        router.push("/buyer/setup-payment")
+      }
       }
     } catch (error: any) {
       toast({
