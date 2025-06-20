@@ -1,5 +1,5 @@
 "use client"
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from "@/components/auth-provider"
 
 const BuyerHeader = () => {
   const { user } = useAuth()

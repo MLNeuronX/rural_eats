@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronUp, User, Store, Truck, Shield } from "lucide-react"
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 

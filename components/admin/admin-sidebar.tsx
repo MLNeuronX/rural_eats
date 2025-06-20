@@ -6,7 +6,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import BarChartIcon from "@mui/icons-material/BarChart"
 import LayersIcon from "@mui/icons-material/Layers"
 import { Link } from "react-router-dom"
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from "@/components/auth-provider"
 
 const AdminSidebar = () => {
   const { user } = useAuth()

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from "@/components/auth-provider"
 
 const DriverHeader: React.FC = () => {
   const { user } = useAuth()
