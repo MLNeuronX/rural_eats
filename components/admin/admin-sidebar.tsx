@@ -5,7 +5,7 @@ import PeopleIcon from "@mui/icons-material/People"
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import BarChartIcon from "@mui/icons-material/BarChart"
 import LayersIcon from "@mui/icons-material/Layers"
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import { useAuth } from "@/components/auth-provider"
 
 const AdminSidebar = () => {
@@ -21,7 +21,7 @@ const AdminSidebar = () => {
       </Typography>
       <Divider />
       <List>
-        <ListItem button component={Link} to="/admin/dashboard">
+        <ListItem button component={Link} href="/admin/dashboard">
           <ListItemIcon>
             <DashboardIcon />
           </ListItemIcon>
@@ -29,25 +29,25 @@ const AdminSidebar = () => {
         </ListItem>
         {isAdmin && (
           <>
-            <ListItem button component={Link} to="/admin/users">
+            <ListItem button component={Link} href="/admin/users">
               <ListItemIcon>
                 <PeopleIcon />
               </ListItemIcon>
               <ListItemText primary="Users" />
             </ListItem>
-            <ListItem button component={Link} to="/admin/products">
+            <ListItem button component={Link} href="/admin/products">
               <ListItemIcon>
                 <ShoppingCartIcon />
               </ListItemIcon>
               <ListItemText primary="Products" />
             </ListItem>
-            <ListItem button component={Link} to="/admin/analytics">
+            <ListItem button component={Link} href="/admin/analytics">
               <ListItemIcon>
                 <BarChartIcon />
               </ListItemIcon>
               <ListItemText primary="Analytics" />
             </ListItem>
-            <ListItem button component={Link} to="/admin/integrations">
+            <ListItem button component={Link} href="/admin/integrations">
               <ListItemIcon>
                 <LayersIcon />
               </ListItemIcon>
