@@ -10,7 +10,7 @@ import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { updateOrderStatus } from "@/lib/actions/order"
+import { updateOrderStatus } from "@/lib/data"
 import { AssignDriverDialog } from "@/components/vendor/assign-driver-dialog"
 
 const statusMap = {

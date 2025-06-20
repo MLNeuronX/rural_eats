@@ -18,6 +18,7 @@ import {
   Area,
 } from "recharts"
 import { TrendingUp, DollarSign, Users, ShoppingBag, Clock } from "lucide-react"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const revenueData = [
   { month: "Jan", revenue: 12000, orders: 340, customers: 120 },
@@ -50,8 +51,6 @@ const orderTrends = [
 
 const cuisineDistribution = [
   { name: "American", value: 30, color: "#8884d8" },
-  { name: "Mexican", value: 20, color: "#82ca9d" },\
-  { name: "Italian\", value: 15, color: \"#ffc658\" },  },
   { name: "Mexican", value: 20, color: "#82ca9d" },
   { name: "Italian", value: 15, color: "#ffc658" },
   { name: "Asian", value: 18, color: "#ff7300" },
