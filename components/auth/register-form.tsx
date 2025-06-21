@@ -68,10 +68,15 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
 
     setIsLoading(true)
 
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com/api";
+
     try {
+      let requestData;
+      let endpoint;
+
       if (role === "vendor") {
-        // Send vendor application to backend
-        const requestData = {
+        endpoint = `${baseApiUrl}/vendor/register`;
+        requestData = {
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
@@ -80,65 +85,70 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
           business_name: formData.businessName,
           address: formData.businessAddress,
           business_type: formData.businessType,
-        }
-        
-        console.log("Sending vendor application data:", requestData)
-        
-        try {
-          const response = await fetch('https://rural-eats-backend.onrender.com/api/vendor/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-          })
+        };
+      } else if (role === "driver") {
+        endpoint = `${baseApiUrl}/driver/register`;
+        requestData = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+        };
+      } else { // buyer
+        endpoint = `${baseApiUrl}/buyer/register`;
+        requestData = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+        };
+      }
+      
+      console.log(`Sending ${role} registration data to ${endpoint}:`, requestData)
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
 
-          console.log("Response status:", response.status)
-          console.log("Response headers:", response.headers)
+      console.log("Response status:", response.status);
 
-          if (response.ok) {
-            const data = await response.json()
-            console.log("Success response:", data)
-            // Store application ID for the submitted page
-            sessionStorage.setItem('vendorApplicationId', data.application_id)
-            toast({
-              title: "Application submitted successfully!",
-              description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
-            })
-            router.push("/vendor/application-submitted")
-          } else {
-            const errorText = await response.text()
-            console.log("Error response text:", errorText)
-            let errorData
-            try {
-              errorData = JSON.parse(errorText)
-            } catch (e) {
-              errorData = { error: errorText }
-            }
-            console.log("Error response parsed:", errorData)
-            throw new Error(errorData.error || `HTTP ${response.status}: ${errorText}`)
-          }
-        } catch (fetchError) {
-          console.error("Fetch error:", fetchError)
-          throw fetchError
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Success response:", data);
+
+        if (role === "vendor") {
+          sessionStorage.setItem('vendorApplicationId', data.application_id);
+          toast({
+            title: "Application submitted successfully!",
+            description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
+          });
+          router.push("/vendor/application-submitted");
+        } else {
+           // For buyer and driver, we might want to log them in directly
+           // For now, just show a success message and redirect
+          toast({
+            title: "Registration successful!",
+            description: role === "driver"
+                ? "Please log in to complete your driver onboarding process."
+                : "Welcome to Rural Eats! Please log in to get started.",
+          });
+          router.push("/login");
         }
       } else {
-        // For other roles, keep the existing mock behavior for now
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-
-        toast({
-          title: "Registration successful!",
-          description:
-            role === "driver"
-              ? "Please complete your driver onboarding process."
-              : "Welcome to Rural Drop! Please set up your payment method.",
-        })
-
-        if (role === "driver") {
-          router.push("/driver/onboarding")
-        } else {
-          router.push("/buyer/setup-payment")
+        const errorText = await response.text();
+        console.log("Error response text:", errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText };
         }
+        console.log("Error response parsed:", errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: An unknown error occurred`);
       }
     } catch (error) {
       console.error('Registration error:', error)
