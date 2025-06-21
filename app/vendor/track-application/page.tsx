@@ -32,21 +32,9 @@ export default function TrackApplicationPage() {
   const [application, setApplication] = useState<ApplicationData | null>(null)
   const { toast } = useToast()
 
-  // Mock application data - in real app, this would come from API
-  const mockApplication: ApplicationData = {
-    id: "APP-2024-001",
-    businessName: "Mary's Diner",
-    applicantName: "Mary Johnson",
-    email: "mary@marysdiner.com",
-    phone: "(555) 123-4567",
-    status: "pending",
-    submittedDate: "2024-01-15",
-    estimatedReviewDate: "2024-01-17",
-    notes: "Application received and under review. We'll contact you within 24-48 hours."
-  }
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!email && !applicationId) {
       toast({
         title: "Search criteria required",
@@ -55,22 +43,36 @@ export default function TrackApplicationPage() {
       })
       return
     }
+
     setIsSearching(true)
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // For demo purposes, show mock data if email matches
-      if (email === "mary@marysdiner.com" || applicationId === "APP-2024-001") {
-        setApplication(mockApplication)
+      const response = await fetch('/api/vendor/track-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, applicationId }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setApplication(data)
+        toast({
+          title: "Application found",
+          description: "Your application details are displayed below",
+        })
       } else {
+        const error = await response.json()
         setApplication(null)
         toast({
           title: "Application not found",
-          description: "No application found with the provided information",
+          description: error.error || "No application found with the provided information",
           variant: "destructive",
         })
       }
     } catch (error) {
+      console.error('Search error:', error)
       toast({
         title: "Search failed",
         description: "Please try again later",
@@ -142,6 +144,7 @@ export default function TrackApplicationPage() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+              
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -150,6 +153,7 @@ export default function TrackApplicationPage() {
                   <span className="bg-background px-2 text-muted-foreground">Or</span>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="applicationId">Application ID</Label>
                 <Input
@@ -159,6 +163,7 @@ export default function TrackApplicationPage() {
                   onChange={(e) => setApplicationId(e.target.value)}
                 />
               </div>
+
               <Button type="submit" className="w-full" disabled={isSearching}>
                 {isSearching ? (
                   <>
@@ -173,14 +178,15 @@ export default function TrackApplicationPage() {
                 )}
               </Button>
             </form>
+
             <div className="mt-6 p-4 bg-muted rounded-md">
-              <h4 className="font-medium mb-2">Demo Information</h4>
+              <h4 className="font-medium mb-2">How to find your application</h4>
               <p className="text-sm text-muted-foreground mb-2">
-                For demonstration purposes, use these credentials:
+                You can search using:
               </p>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Email: mary@marysdiner.com</li>
-                <li>• Application ID: APP-2024-001</li>
+                <li>• The email address you used when applying</li>
+                <li>• Your application ID (sent to your email after submission)</li>
               </ul>
             </div>
           </CardContent>
@@ -223,7 +229,9 @@ export default function TrackApplicationPage() {
                   </div>
                 </div>
               </div>
+
               <Separator />
+
               <div>
                 <h3 className="font-medium mb-2">Timeline</h3>
                 <div className="space-y-2 text-sm">
@@ -237,6 +245,7 @@ export default function TrackApplicationPage() {
                   </div>
                 </div>
               </div>
+
               {application.notes && (
                 <>
                   <Separator />
@@ -247,9 +256,10 @@ export default function TrackApplicationPage() {
                 </>
               )}
             </div>
+
             <div className="flex gap-2">
-              <Button
-                variant="outline"
+              <Button 
+                variant="outline" 
                 className="flex-1"
                 onClick={() => setApplication(null)}
               >

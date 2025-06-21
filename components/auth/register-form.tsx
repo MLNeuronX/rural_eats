@@ -69,31 +69,61 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      if (role === "vendor") {
+        // Send vendor application to backend
+        const response = await fetch('/api/vendor/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password,
+            business_name: formData.businessName,
+            address: formData.businessAddress,
+            business_type: formData.businessType,
+          }),
+        })
 
-      toast({
-        title: "Registration successful!",
-        description:
-          role === "vendor"
-            ? "Your application has been submitted for review. You'll receive an email within 24-48 hours."
-            : role === "driver"
+        if (response.ok) {
+          const data = await response.json()
+          // Store application ID for the submitted page
+          sessionStorage.setItem('vendorApplicationId', data.application_id)
+          toast({
+            title: "Application submitted successfully!",
+            description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
+          })
+          router.push("/vendor/application-submitted")
+        } else {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to submit application')
+        }
+      } else {
+        // For other roles, keep the existing mock behavior for now
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+
+        toast({
+          title: "Registration successful!",
+          description:
+            role === "driver"
               ? "Please complete your driver onboarding process."
               : "Welcome to Rural Drop! Please set up your payment method.",
-      })
+        })
 
-      // Route based on role
-      if (role === "vendor") {
-        router.push("/vendor/application-submitted")
-      } else if (role === "driver") {
-        router.push("/driver/onboarding")
-      } else {
-        router.push("/buyer/setup-payment")
+        if (role === "driver") {
+          router.push("/driver/onboarding")
+        } else {
+          router.push("/buyer/setup-payment")
+        }
       }
     } catch (error) {
+      console.error('Registration error:', error)
       toast({
         title: "Registration failed",
-        description: "Please try again later",
+        description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       })
     } finally {

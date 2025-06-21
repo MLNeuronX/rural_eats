@@ -1,11 +1,36 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Clock, Mail, Phone } from "lucide-react"
+import { CheckCircle, Clock, Mail, Phone, Copy } from "lucide-react"
 import Link from "next/link"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function ApplicationSubmittedPage() {
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    // Get application ID from sessionStorage (set during registration)
+    const storedId = sessionStorage.getItem('vendorApplicationId')
+    if (storedId) {
+      setApplicationId(storedId)
+      // Clear it after displaying
+      sessionStorage.removeItem('vendorApplicationId')
+    }
+  }, [])
+
+  const copyApplicationId = () => {
+    if (applicationId) {
+      navigator.clipboard.writeText(applicationId)
+      toast({
+        title: "Application ID copied",
+        description: "You can use this ID to track your application",
+      })
+    }
+  }
+
   return (
     <div className="container max-w-md mx-auto px-4 py-8">
       <Card>
@@ -14,9 +39,29 @@ export default function ApplicationSubmittedPage() {
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <CardTitle>Application Submitted!</CardTitle>
-          <CardDescription>Thank you for your interest in becoming a Rural Eats partner</CardDescription>
+          <CardDescription>Thank you for your interest in becoming a Rural Drop partner</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {applicationId && (
+            <div className="bg-muted p-4 rounded-md">
+              <h4 className="font-medium mb-2">Your Application ID</h4>
+              <div className="flex items-center justify-between">
+                <code className="text-sm bg-background px-2 py-1 rounded">{applicationId}</code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyApplicationId}
+                  className="ml-2"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Save this ID to track your application status
+              </p>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -40,7 +85,7 @@ export default function ApplicationSubmittedPage() {
               <Phone className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium">Questions?</h3>
-                <p className="text-sm text-muted-foreground">Contact us at (555) 123-4567 or support@ruraleats.com</p>
+                <p className="text-sm text-muted-foreground">Contact us at (555) 123-4567 or support@ruraldrop.com</p>
               </div>
             </div>
           </div>
