@@ -71,7 +71,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
     try {
       if (role === "vendor") {
         // Send vendor application to backend
-        const response = await fetch('/api/vendor/register', {
+        const response = await fetch('http://localhost:5000/api/vendor/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
