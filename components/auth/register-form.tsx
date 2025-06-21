@@ -71,35 +71,56 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
     try {
       if (role === "vendor") {
         // Send vendor application to backend
-        const response = await fetch('https://rural-eats-backend.onrender.com/api/vendor/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            password: formData.password,
-            business_name: formData.businessName,
-            address: formData.businessAddress,
-            business_type: formData.businessType,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          // Store application ID for the submitted page
-          sessionStorage.setItem('vendorApplicationId', data.application_id)
-          toast({
-            title: "Application submitted successfully!",
-            description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
+        const requestData = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          business_name: formData.businessName,
+          address: formData.businessAddress,
+          business_type: formData.businessType,
+        }
+        
+        console.log("Sending vendor application data:", requestData)
+        
+        try {
+          const response = await fetch('https://rural-eats-backend.onrender.com/api/vendor/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
           })
-          router.push("/vendor/application-submitted")
-        } else {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to submit application')
+
+          console.log("Response status:", response.status)
+          console.log("Response headers:", response.headers)
+
+          if (response.ok) {
+            const data = await response.json()
+            console.log("Success response:", data)
+            // Store application ID for the submitted page
+            sessionStorage.setItem('vendorApplicationId', data.application_id)
+            toast({
+              title: "Application submitted successfully!",
+              description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
+            })
+            router.push("/vendor/application-submitted")
+          } else {
+            const errorText = await response.text()
+            console.log("Error response text:", errorText)
+            let errorData
+            try {
+              errorData = JSON.parse(errorText)
+            } catch (e) {
+              errorData = { error: errorText }
+            }
+            console.log("Error response parsed:", errorData)
+            throw new Error(errorData.error || `HTTP ${response.status}: ${errorText}`)
+          }
+        } catch (fetchError) {
+          console.error("Fetch error:", fetchError)
+          throw fetchError
         }
       } else {
         // For other roles, keep the existing mock behavior for now
