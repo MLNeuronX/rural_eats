@@ -40,6 +40,7 @@ export interface Order {
   }[]
   status: OrderStatus
   total: number
+  tip?: number
   deliveryFee: number
   deliveryAddress: string
   deliveryTime: string | null
@@ -299,6 +300,7 @@ export const orders: Order[] = [
     ],
     status: "NEW",
     total: 27.96,
+    tip: 2.00,
     deliveryFee: 3.99,
     deliveryAddress: "123 Customer St, Rural Town",
     deliveryTime: null,
@@ -326,6 +328,7 @@ export const orders: Order[] = [
     ],
     status: "PREPARING",
     total: 20.97,
+    tip: 1.00,
     deliveryFee: 2.99,
     deliveryAddress: "123 Customer St, Rural Town",
     deliveryTime: null,
@@ -347,6 +350,7 @@ export const orders: Order[] = [
     ],
     status: "READY",
     total: 16.48,
+    tip: 0.50,
     deliveryFee: 3.49,
     deliveryAddress: "456 Customer Ave, Rural Town",
     deliveryTime: null,
@@ -368,6 +372,7 @@ export const orders: Order[] = [
     ],
     status: "OUT_FOR_DELIVERY",
     total: 16.98,
+    tip: 0.50,
     deliveryFee: 3.99,
     deliveryAddress: "123 Customer St, Rural Town",
     deliveryTime: null,
@@ -389,6 +394,7 @@ export const orders: Order[] = [
     ],
     status: "DELIVERED",
     total: 24.47,
+    tip: 1.00,
     deliveryFee: 2.49,
     deliveryAddress: "789 Customer Blvd, Rural Town",
     deliveryTime: null,

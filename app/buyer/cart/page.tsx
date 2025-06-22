@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, Minus, Plus, Trash2, DollarSign } from "lucide-react"
 import { useCart } from "@/components/buyer/cart-provider"
 import { getVendorById, createOrder } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
@@ -18,6 +18,8 @@ export default function CartPage() {
   const { items, vendorId, updateQuantity, removeItem, total, clearCart } = useCart()
   const [vendor, setVendor] = useState<any>(null)
   const [address, setAddress] = useState("")
+  const [tip, setTip] = useState(0)
+  const [customTip, setCustomTip] = useState("")
   const [deliveryTime, setDeliveryTime] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
@@ -65,7 +67,8 @@ export default function CartPage() {
           quantity: item.quantity,
         })),
         status: "NEW",
-        total: total,
+        total: total + tip,
+        tip: tip,
         deliveryFee: vendor?.deliveryFee || 0,
         deliveryAddress: address,
         deliveryTime: deliveryTime,
@@ -211,6 +214,42 @@ export default function CartPage() {
         </div>
       </div>
 
+      <Separator className="my-6" />
+
+      <div className="space-y-2 mb-6">
+        <h3 className="text-lg font-semibold">Driver Tip</h3>
+        <p className="text-sm text-muted-foreground">
+          Your driver receives 100% of the tip. Thank you for your generosity!
+        </p>
+        <div className="flex flex-wrap gap-2 pt-2">
+          {[0, 2, 5, 8].map((presetTip) => (
+            <Button
+              key={presetTip}
+              variant={tip === presetTip ? "default" : "outline"}
+              onClick={() => {
+                setTip(presetTip)
+                setCustomTip("")
+              }}
+            >
+              ${presetTip}
+            </Button>
+          ))}
+          <div className="relative">
+            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="number"
+              placeholder="Custom"
+              className="pl-7 w-28"
+              value={customTip}
+              onChange={(e) => {
+                setCustomTip(e.target.value)
+                setTip(Number(e.target.value) || 0)
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className="flex justify-between">
@@ -221,13 +260,17 @@ export default function CartPage() {
             <span>Delivery Fee</span>
             <span>${(vendor?.deliveryFee || 0).toFixed(2)}</span>
           </div>
+          <div className="flex justify-between">
+            <span>Driver Tip</span>
+            <span>${tip.toFixed(2)}</span>
+          </div>
           <Separator />
-          <div className="flex justify-between font-medium">
+          <div className="flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span>${(total + (vendor?.deliveryFee || 0)).toFixed(2)}</span>
+            <span>${(total + (vendor?.deliveryFee || 0) + tip).toFixed(2)}</span>
           </div>
         </CardContent>
-        <CardFooter className="p-4 pt-0">
+        <CardFooter className="p-4">
           <Button className="w-full" onClick={handleCheckout} disabled={isLoading}>
             {isLoading ? "Processing..." : "Place Order"}
           </Button>
