@@ -117,7 +117,7 @@ export default function LandingPage() {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <Link href="/buyer">
+                <Link href="/buyer/login">
                   <Button
                     size="lg"
                     className="bg-amber-500 hover:bg-amber-600 text-black px-10 py-6 text-xl font-semibold shadow-2xl border-0 rounded-2xl hover:shadow-amber-500/25"
@@ -134,7 +134,7 @@ export default function LandingPage() {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <Link href="/vendor/register">
+                <Link href="/vendor/login">
                   <Button
                     size="lg"
                     className="bg-green-700 hover:bg-green-800 text-white px-10 py-6 text-xl font-semibold shadow-2xl border-0 rounded-2xl hover:shadow-green-700/25"
@@ -151,7 +151,7 @@ export default function LandingPage() {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <Link href="/driver/register">
+                <Link href="/driver/login">
                   <Button
                     size="lg"
                     className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-6 text-xl font-semibold shadow-2xl border-0 rounded-2xl hover:shadow-blue-500/25"
@@ -194,7 +194,7 @@ export default function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {/* Buyer Portal Card - Amber Theme */}
-              <Link href="/buyer">
+              <Link href="/buyer/login">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -5 }}
                   className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 backdrop-blur-sm border border-amber-500/30 rounded-3xl p-8 text-center cursor-pointer"
@@ -206,7 +206,7 @@ export default function LandingPage() {
               </Link>
 
               {/* Vendor Portal Card - Forest Green Theme */}
-              <Link href="/vendor">
+              <Link href="/vendor/login">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -5 }}
                   className="bg-gradient-to-br from-green-700/20 to-emerald-600/20 backdrop-blur-sm border border-green-600/30 rounded-3xl p-8 text-center cursor-pointer"
@@ -218,7 +218,7 @@ export default function LandingPage() {
               </Link>
 
               {/* Driver Portal Card - Electric Blue Theme */}
-              <Link href="/driver">
+              <Link href="/driver/login">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -5 }}
                   className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm border border-blue-500/30 rounded-3xl p-8 text-center cursor-pointer"
