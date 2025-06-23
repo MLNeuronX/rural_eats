@@ -69,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
 
-    // Determine the correct API endpoint based on the role
-    const endpoint = role === 'vendor' ? 'https://rural-eats-backend.onrender.com/api/vendor/login' : 'https://rural-eats-backend.onrender.com/api/user/login';
+    // All roles (including vendor) should use the user login endpoint
+    const endpoint = 'https://rural-eats-backend.onrender.com/api/user/login';
 
     try {
       const response = await fetch(endpoint, {
