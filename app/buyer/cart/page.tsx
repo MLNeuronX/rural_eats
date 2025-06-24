@@ -8,7 +8,6 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Minus, Plus, Trash2, DollarSign } from "lucide-react"
 import { useCart } from "@/components/buyer/cart-provider"
 import { getVendorById, createOrder } from "@/lib/data"
@@ -24,7 +23,6 @@ export default function CartPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
 
   // Fetch vendor details if we have a vendorId
   useState(() => {
@@ -35,20 +33,10 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please log in to complete your order",
-        variant: "destructive",
-      })
       return
     }
 
     if (!address) {
-      toast({
-        title: "Address required",
-        description: "Please enter a delivery address",
-        variant: "destructive",
-      })
       return
     }
 
@@ -77,25 +65,10 @@ export default function CartPage() {
       // Clear cart
       clearCart()
 
-      // Show success message
-      toast({
-        title: "Order placed!",
-        description: "Your order has been successfully placed.",
-      })
-
-      // Generate WhatsApp link
-      const whatsappMessage = `Hi! I just placed order #${order.id} for ${items.map((item) => `${item.quantity}x ${item.menuItem.name}`).join(", ")}. Please confirm my order.`
-      const whatsappLink = `https://wa.me/15551234567?text=${encodeURIComponent(whatsappMessage)}`
-
       // Redirect to confirmation page
-      router.push(`/buyer/orders/${order.id}?whatsapp=${encodeURIComponent(whatsappLink)}`)
+      router.push(`/buyer/orders/${order.id}`)
     } catch (error) {
       console.error("Error placing order:", error)
-      toast({
-        title: "Error",
-        description: "There was a problem placing your order. Please try again.",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }

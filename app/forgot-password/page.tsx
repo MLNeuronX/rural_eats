@@ -2,27 +2,31 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting forgot password for:", email);
-    const res = await fetch(`https://rural-eats-backend.onrender.com/api/user/forgot-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    console.log("Response status:", res.status);
-    if (res.ok) {
-      setSent(true);
-      toast({ title: "Check your email for a reset link." });
-    } else {
-      toast({ title: "Error", description: "Could not send reset link.", variant: "destructive" });
+    setIsLoading(true);
+
+    try {
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+      const res = await fetch(`${baseApiUrl}/api/user/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      console.log("Response status:", res.status);
+      if (res.ok) {
+        setSent(true);
+      }
+    } catch (error) {
+      console.error("Error submitting forgot password:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,14 +37,23 @@ export default function ForgotPasswordPage() {
         <p>Check your email for a password reset link.</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+          {/* <Input
             type="email"
             placeholder="Your email address"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+          /> */}
+          <input
+            type="email"
+            placeholder="Your email address"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            className="border p-2 w-full rounded"
           />
-          <Button type="submit" className="w-full">Send Reset Link</Button>
+          {/* <Button type="submit" className="w-full">Send Reset Link</Button> */}
+          <input type="submit" className="w-full bg-blue-500 text-white py-2 rounded" value="Send Reset Link" />
         </form>
       )}
     </div>

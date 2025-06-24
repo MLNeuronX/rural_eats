@@ -71,7 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
-    const endpoint = 'https://rural-eats-backend.onrender.com/api/user/login';
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+    const endpoint = `${baseApiUrl}/api/user/login`;
     try {
       const response = await fetch(endpoint, {
         method: 'POST',

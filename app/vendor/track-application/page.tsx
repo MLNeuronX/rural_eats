@@ -41,7 +41,8 @@ export default function TrackApplicationPage() {
     setIsSearching(true)
 
     try {
-      const response = await authFetch('https://rural-eats-backend.onrender.com/api/vendor/track-application', {
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+      const response = await authFetch(`${baseApiUrl}/api/vendor/track-application`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

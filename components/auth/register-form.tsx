@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 
@@ -34,35 +33,19 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
   })
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Passwords do not match",
-        variant: "destructive",
-      })
       return
     }
 
     if (!formData.agreeToTerms) {
-      toast({
-        title: "Terms required",
-        description: "Please agree to the terms and conditions",
-        variant: "destructive",
-      })
       return
     }
 
     if (role === "driver" && !formData.agreeToBackground) {
-      toast({
-        title: "Background check required",
-        description: "Please agree to the background check for driver registration",
-        variant: "destructive",
-      })
       return
     }
 
@@ -122,20 +105,10 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
 
         if (role === "vendor") {
           sessionStorage.setItem('vendorApplicationId', data.application_id);
-          toast({
-            title: "Application submitted successfully!",
-            description: `Your application ID is ${data.application_id}. You'll receive an email within 24-48 hours.`,
-          });
           router.push("/vendor/application-submitted");
         } else {
            // For buyer and driver, we might want to log them in directly
            // For now, just show a success message and redirect
-          toast({
-            title: "Registration successful!",
-            description: role === "driver"
-                ? "Please log in to complete your driver onboarding process."
-                : "Welcome to Rural Eats! Please log in to get started.",
-          });
           router.push("/login");
         }
       } else {
@@ -152,11 +125,6 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
       }
     } catch (error) {
       console.error('Registration error:', error)
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Please try again later",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }

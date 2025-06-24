@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
 import { Phone, MessageSquare, Bell, Clock, MapPin, User } from "lucide-react"
 
 interface DriverNotificationProps {
@@ -23,7 +22,6 @@ export function DriverNotification({
 }: DriverNotificationProps) {
   const [isNotifying, setIsNotifying] = useState(false)
   const [hasNotified, setHasNotified] = useState(false)
-  const { toast } = useToast()
 
   const notifyDriver = async (method: "call" | "sms" | "app") => {
     setIsNotifying(true)
@@ -45,18 +43,9 @@ export function DriverNotification({
           break
       }
 
-      toast({
-        title: "Driver notified",
-        description: message,
-      })
-
       setHasNotified(true)
     } catch (error) {
-      toast({
-        title: "Failed to notify driver",
-        description: "Please try again.",
-        variant: "destructive",
-      })
+      // No toast usage
     } finally {
       setIsNotifying(false)
     }

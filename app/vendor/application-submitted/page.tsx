@@ -5,11 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Clock, Mail, Phone, Copy } from "lucide-react"
 import Link from "next/link"
-import { useToast } from "@/components/ui/use-toast"
 
 export default function ApplicationSubmittedPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null)
-  const { toast } = useToast()
 
   useEffect(() => {
     // Get application ID from sessionStorage (set during registration)
@@ -24,10 +22,6 @@ export default function ApplicationSubmittedPage() {
   const copyApplicationId = () => {
     if (applicationId) {
       navigator.clipboard.writeText(applicationId)
-      toast({
-        title: "Application ID copied",
-        description: "You can use this ID to track your application",
-      })
     }
   }
 

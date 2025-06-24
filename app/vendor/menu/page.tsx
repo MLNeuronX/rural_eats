@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
 import { Plus, Edit, Trash2, ArrowLeft, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/components/auth-provider"
@@ -19,7 +18,6 @@ export default function MenuManagement() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const { user } = useAuth()
-  const { toast } = useToast()
 
   useEffect(() => {
     if (user) {
@@ -31,12 +29,6 @@ export default function MenuManagement() {
     try {
       const items = await getMenuItems("v1") // Mock vendor ID
       setMenuItems(items)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load menu items",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }
@@ -46,49 +38,27 @@ export default function MenuManagement() {
     try {
       const updatedItem = await updateMenuItem(item.id, {
         available: !item.available,
-      })
+      });
 
       if (updatedItem) {
-        setMenuItems((items) => items.map((i) => (i.id === item.id ? updatedItem : i)))
-
-        toast({
-          title: updatedItem.available ? "Item enabled" : "Item disabled",
-          description: `${item.name} is now ${updatedItem.available ? "available" : "unavailable"} for orders.`,
-        })
+        setMenuItems((items) => items.map((i) => (i.id === item.id ? updatedItem : i)));
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update item availability",
-        variant: "destructive",
-      })
-    }
-  }
+    } catch (e) {}
+  };
 
   const handleDeleteItem = async (item: MenuItem) => {
     if (!window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      return
+      return;
     }
 
     try {
-      const success = await deleteMenuItem(item.id)
+      const success = await deleteMenuItem(item.id);
 
       if (success) {
-        setMenuItems((items) => items.filter((i) => i.id !== item.id))
-
-        toast({
-          title: "Item deleted",
-          description: `${item.name} has been removed from your menu.`,
-        })
+        setMenuItems((items) => items.filter((i) => i.id !== item.id));
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete menu item",
-        variant: "destructive",
-      })
-    }
-  }
+    } catch (e) {}
+  };
 
   const handleItemAdded = (newItem: MenuItem) => {
     setMenuItems((items) => [...items, newItem])

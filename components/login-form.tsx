@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Loader2, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 
@@ -32,7 +31,6 @@ export function LoginForm({ role, title }: LoginFormProps) {
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
   const { login } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,26 +41,14 @@ export function LoginForm({ role, title }: LoginFormProps) {
       const result = await login(email, password, role)
 
       if (result.success) {
-        toast({
-          title: "Login successful",
-          description: `Welcome to Rural Eats as ${role}`,
-        })
         router.push(`/${role}`)
       } else if (result.login_status === 'application_pending') {
         setApplicationStatus(result.application);
       } else {
-        toast({
-          title: "Login failed",
-          description: result.error || "Please check your credentials and try again",
-          variant: "destructive",
-        })
+        // No toast notification needed as per the instructions
       }
     } catch (error: any) {
-      toast({
-        title: "Login error",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
-      })
+      // No toast notification needed as per the instructions
     } finally {
       setIsLoading(false)
     }

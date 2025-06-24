@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function ResetPasswordInner() {
   const [password, setPassword] = useState("");
@@ -11,21 +10,29 @@ export default function ResetPasswordInner() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token");
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(`https://rural-eats-backend.onrender.com/api/user/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, new_password: password }),
-    });
-    if (res.ok) {
-      setSuccess(true);
-      toast({ title: "Password reset successful. You can now log in." });
-      setTimeout(() => router.push("/login"), 2000);
-    } else {
-      toast({ title: "Error", description: "Invalid or expired token.", variant: "destructive" });
+    setIsLoading(true);
+
+    try {
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+      const res = await fetch(`${baseApiUrl}/api/user/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, new_password: password }),
+      });
+      if (res.ok) {
+        setSuccess(true);
+        setTimeout(() => router.push("/login"), 2000);
+      } else {
+        // No toast notification needed as per the new code
+      }
+    } catch (error) {
+      console.error("Error submitting reset password:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,7 +50,7 @@ export default function ResetPasswordInner() {
             onChange={e => setPassword(e.target.value)}
             required
           />
-          <Button type="submit" className="w-full">Reset Password</Button>
+          <Button type="submit" className="w-full" disabled={isLoading}>Reset Password</Button>
         </form>
       )}
     </div>

@@ -1,5 +1,5 @@
 // Types
-export type OrderStatus = "NEW" | "CONFIRMED" | "PREPARING" | "READY" | "ASSIGNED" | "OUT_FOR_DELIVERY" | "DELIVERED"
+export type OrderStatus = "NEW" | "CONFIRMED" | "PREPARING" | "READY" | "DRIVER_ASSIGNED" | "DRIVER_ACCEPTED" | "ACCEPTED" | "ASSIGNED" | "OUT_FOR_DELIVERY" | "DELIVERED"
 
 export interface MenuItem {
   id: string
@@ -46,6 +46,7 @@ export interface Order {
   deliveryTime: string | null
   createdAt: string
   updatedAt: string
+  driver_assigned: boolean
 }
 
 export interface User {
@@ -306,6 +307,7 @@ export const orders: Order[] = [
     deliveryTime: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    driver_assigned: false,
   },
   {
     id: "o2",
@@ -334,6 +336,7 @@ export const orders: Order[] = [
     deliveryTime: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(), // 20 minutes ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 minutes ago
+    driver_assigned: false,
   },
   {
     id: "o3",
@@ -356,6 +359,7 @@ export const orders: Order[] = [
     deliveryTime: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
+    driver_assigned: false,
   },
   {
     id: "o4",
@@ -378,6 +382,7 @@ export const orders: Order[] = [
     deliveryTime: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 minutes ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 minutes ago
+    driver_assigned: false,
   },
   {
     id: "o5",
@@ -400,6 +405,7 @@ export const orders: Order[] = [
     deliveryTime: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(), // 90 minutes ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+    driver_assigned: false,
   },
 ]
 
@@ -531,6 +537,7 @@ export async function createOrder(order: Omit<Order, "id" | "createdAt" | "updat
     id: `o${orders.length + 1}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    driver_assigned: false,
   }
 
   orders.push(newOrder)
@@ -562,8 +569,23 @@ export async function assignOrderToDriver(orderId: string, driverId: string) {
     driverId,
     status: "ASSIGNED" as const,
     updatedAt: new Date().toISOString(),
+    driver_assigned: true,
   }
 
   orders[orderIndex] = updatedOrder
   return updatedOrder
+}
+
+// Add API call for vendor accept order
+export async function vendorAcceptOrder(orderId: string) {
+  const res = await fetch(`/api/vendor/orders/${orderId}/accept`, { method: "POST" })
+  if (!res.ok) throw new Error("Failed to accept order")
+  return res.json()
+}
+
+// Add API call for driver accept assignment
+export async function driverAcceptAssignment(orderId: string) {
+  const res = await fetch(`/api/driver/orders/${orderId}/accept`, { method: "POST" })
+  if (!res.ok) throw new Error("Failed to accept assignment")
+  return res.json()
 }

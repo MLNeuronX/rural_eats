@@ -8,12 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
 import { Store, Clock, Bell, CreditCard, Menu, Save, Upload, Copy, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function VendorSettingsPage() {
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
 
@@ -134,10 +132,6 @@ export default function VendorSettingsPage() {
     })
 
     setOperatingHours(updatedHours)
-    toast({
-      title: "Hours copied",
-      description: `Applied ${sourceDay}'s hours to all other days.`,
-    })
   }
 
   const applyWeekdayWeekendHours = () => {
@@ -167,10 +161,6 @@ export default function VendorSettingsPage() {
       })
 
     setOperatingHours(updatedHours)
-    toast({
-      title: "Hours updated",
-      description: "Applied standard weekday/weekend hours.",
-    })
   }
 
   const saveSettings = async (section: string) => {
@@ -183,19 +173,10 @@ export default function VendorSettingsPage() {
 
       setSaveSuccess(section)
 
-      toast({
-        title: "Settings saved",
-        description: `Your ${section} settings have been updated.`,
-      })
-
       // Clear success indicator after animation completes
       setTimeout(() => setSaveSuccess(null), 2000)
     } catch (error) {
-      toast({
-        title: "Error saving settings",
-        description: "Please try again later.",
-        variant: "destructive",
-      })
+      // Handle error
     } finally {
       setIsLoading(false)
     }

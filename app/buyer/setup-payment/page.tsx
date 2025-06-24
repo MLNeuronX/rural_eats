@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
 import { CreditCard, Shield, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
@@ -25,7 +24,6 @@ export default function SetupPaymentPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,18 +33,9 @@ export default function SetupPaymentPage() {
       // Simulate Stripe payment method creation
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      toast({
-        title: "Payment method added!",
-        description: "Your payment method has been securely saved.",
-      })
-
       router.push("/buyer")
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add payment method. Please try again.",
-        variant: "destructive",
-      })
+      // No toast notification is used in this file
     } finally {
       setIsLoading(false)
     }

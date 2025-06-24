@@ -8,11 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
 import { User, MapPin, Bell, CreditCard, Save, Trash2, Plus } from "lucide-react"
 
 export default function BuyerSettingsPage() {
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
   const [personalInfo, setPersonalInfo] = useState({
@@ -133,17 +131,8 @@ export default function BuyerSettingsPage() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 800))
-
-      toast({
-        title: "Settings saved",
-        description: `Your ${section} settings have been updated.`,
-      })
     } catch (error) {
-      toast({
-        title: "Error saving settings",
-        description: "Please try again later.",
-        variant: "destructive",
-      })
+      // Handle error
     } finally {
       setIsLoading(false)
     }

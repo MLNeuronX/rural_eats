@@ -3,15 +3,15 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster, toast } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth-provider"
+import { CartProvider } from "@/components/buyer/cart-provider"
+import { ToastProvider } from "@/components/ui/toast-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rural Drop - Local Food Delivery",
-  description: "Food delivery for small towns and rural communities",
-    generator: 'v0.dev'
+  title: "Rural Eats",
+  description: "Food delivery for rural communities",
 }
 
 class GlobalErrorBoundary extends React.Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -23,7 +23,7 @@ class GlobalErrorBoundary extends React.Component<{ children: ReactNode }, { has
     return { hasError: true, error };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    toast("An error occurred: " + (error.message || "Unknown error"));
+    // No toast usage
   }
   render() {
     if (this.state.hasError) {
@@ -35,20 +35,31 @@ class GlobalErrorBoundary extends React.Component<{ children: ReactNode }, { has
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <div className="w-full bg-yellow-200 text-yellow-900 text-center py-2 text-sm font-semibold">
+          DEMO MODE: This is a test environment. Printer and notifications are simulated.
+        </div>
         <GlobalErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="light">
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <CartProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
         </GlobalErrorBoundary>
-        <Toaster />
       </body>
     </html>
   )

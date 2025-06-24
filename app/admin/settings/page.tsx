@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
 import { Save, Settings, Bell, DollarSign, Globe, Shield } from "lucide-react"
 
 export default function SettingsPage() {
@@ -45,24 +44,14 @@ export default function SettingsPage() {
   })
 
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
 
   const handleSave = async () => {
     setIsLoading(true)
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast({
-        title: "Settings saved",
-        description: "Platform settings have been updated successfully.",
-      })
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      })
+      // Handle error
     } finally {
       setIsLoading(false)
     }

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, MapPin, Clock, Truck } from "lucide-react"
 
@@ -69,7 +68,6 @@ export function AssignDriverDialog({ open, onOpenChange, orderId, onDriverAssign
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [isAssigning, setIsAssigning] = useState(false)
   const [assignmentStep, setAssignmentStep] = useState<"select" | "confirming" | "success">("select")
-  const { toast } = useToast()
 
   const handleDriverSelect = (driver: Driver) => {
     setSelectedDriver(driver)
@@ -96,29 +94,13 @@ export function AssignDriverDialog({ open, onOpenChange, orderId, onDriverAssign
           onDriverAssigned(selectedDriver.id, selectedDriver.name)
           onOpenChange(false)
           resetDialog()
-
-          toast({
-            title: "Driver Assigned Successfully! 🚚",
-            description: `${selectedDriver.name} will pick up the order in ~${selectedDriver.estimatedTime} minutes.`,
-            className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-          })
         }, 2000)
       } else {
         // Driver declined
-        toast({
-          title: "Driver Declined",
-          description: `${selectedDriver.name} is unavailable. Please try another driver.`,
-          variant: "destructive",
-        })
         setAssignmentStep("select")
         setSelectedDriver(null)
       }
     } catch (error) {
-      toast({
-        title: "Assignment Failed",
-        description: "Failed to assign driver. Please try again.",
-        variant: "destructive",
-      })
       setAssignmentStep("select")
     } finally {
       setIsAssigning(false)

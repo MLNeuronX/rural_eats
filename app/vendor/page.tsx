@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { DollarSign, Package, Clock, TrendingUp, Star, CheckCircle, Settings, Menu, Eye } from "lucide-react"
+import { showToast } from "@/components/ui/toast-provider"
 
 export default function VendorDashboard() {
   const [activeOrders, setActiveOrders] = useState([
@@ -37,6 +38,8 @@ export default function VendorDashboard() {
     },
   ])
 
+  const [creatingOrder, setCreatingOrder] = useState(false)
+
   const updateOrderStatus = (orderId: string, newStatus: string) => {
     setActiveOrders((orders) => orders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)))
   }
@@ -54,8 +57,37 @@ export default function VendorDashboard() {
     }
   }
 
+  const handleCreateTestOrder = async () => {
+    setCreatingOrder(true)
+    // TODO: Replace with real API call if needed
+    setTimeout(() => {
+      showToast.success("Test order created!")
+      setCreatingOrder(false)
+    }, 1000)
+  }
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
+      {/* Printer Onboarding Call-to-Action */}
+      <div className="mb-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-yellow-900">Connect your kitchen printer before going live!</div>
+            <div className="text-yellow-700 text-sm">Enable automatic kitchen printouts for new orders.</div>
+          </div>
+          <Link href="/vendor/onboarding">
+            <button className="ml-4 px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition">Connect Printer</button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Test Order Button */}
+      <div className="mb-6 flex justify-end">
+        <button onClick={handleCreateTestOrder} disabled={creatingOrder} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+          {creatingOrder ? "Creating..." : "Create Test Order"}
+        </button>
+      </div>
+
       {/* Header with Settings Link */}
       <div className="flex items-center justify-between mb-8">
         <div>

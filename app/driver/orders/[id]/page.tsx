@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, MapPin, Navigation, MessageCircle, Truck, CheckCircle, Clock, Phone } from "lucide-react"
-import { getOrderById, updateOrderStatus, type Order } from "@/lib/data"
+import { getOrderById, updateOrderStatus, type Order, driverAcceptAssignment } from "@/lib/data"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { orderToasts, showToast } from "@/components/ui/toast-provider"
+import { useOrderUpdates } from "@/hooks/use-realtime"
 
 function OrderStatusBadge({ status }: { status: Order["status"] }) {
   const statusMap: Record<Order["status"], { label: string; className: string }> = {
@@ -16,6 +18,9 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     CONFIRMED: { label: "Confirmed", className: "bg-green-100 text-green-800" },
     PREPARING: { label: "Preparing", className: "bg-yellow-100 text-yellow-800" },
     READY: { label: "Ready", className: "bg-purple-100 text-purple-800" },
+    DRIVER_ASSIGNED: { label: "Driver Assigned", className: "bg-indigo-100 text-indigo-800" },
+    DRIVER_ACCEPTED: { label: "Driver Accepted", className: "bg-cyan-100 text-cyan-800" },
+    ACCEPTED: { label: "Accepted", className: "bg-green-200 text-green-900" },
     ASSIGNED: { label: "Assigned", className: "bg-indigo-100 text-indigo-800" },
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
@@ -29,11 +34,23 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
   const [order, setOrder] = useState<Order | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
-  const { toast } = useToast()
+  const [isAccepting, setIsAccepting] = useState(false)
+
+  // Real-time order updates
+  const { order: realtimeOrder, isLoading: realtimeLoading } = useOrderUpdates(params.id, true)
+
+  useEffect(() => {
+    if (realtimeOrder) {
+      setOrder(realtimeOrder)
+    }
+  }, [realtimeOrder])
 
   useEffect(() => {
     getOrderById(params.id).then((order) => {
       setOrder(order)
+      setIsLoading(false)
+    }).catch((error) => {
+      showToast.error("Failed to load order details")
       setIsLoading(false)
     })
   }, [params.id])
@@ -46,19 +63,30 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
       const updatedOrder = await updateOrderStatus(order.id, newStatus, "d1")
       if (updatedOrder) {
         setOrder(updatedOrder)
-        toast({
-          title: "Status updated",
-          description: `Order status changed to ${newStatus.toLowerCase().replace("_", " ")}.`,
-        })
+        orderToasts.statusUpdated(newStatus)
+        
+        if (newStatus === "DELIVERED") {
+          orderToasts.orderDelivered()
+        }
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update order status",
-        variant: "destructive",
-      })
+      showToast.error("Failed to update order status")
     } finally {
       setIsUpdating(false)
+    }
+  }
+
+  const handleAcceptDelivery = async () => {
+    if (!order) return
+    setIsAccepting(true)
+    try {
+      await driverAcceptAssignment(order.id)
+      showToast.success("Delivery assignment accepted!")
+      // Optionally refetch order or update state
+    } catch (error) {
+      showToast.error("Failed to accept delivery assignment")
+    } finally {
+      setIsAccepting(false)
     }
   }
 
@@ -90,69 +118,49 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
 
   if (isLoading) {
     return (
-      <div className="container max-w-2xl mx-auto px-4 py-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-32 bg-muted rounded" />
-          <div className="h-24 bg-muted rounded" />
-        </div>
+      <div className="container max-w-4xl mx-auto px-4 py-6">
+        <LoadingSpinner size="lg" text="Loading order details..." />
       </div>
     )
   }
 
   if (!order) {
     return (
-      <div className="container max-w-2xl mx-auto px-4 py-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-        <Link href="/driver/orders">
-          <Button>Back to Orders</Button>
-        </Link>
+      <div className="container max-w-4xl mx-auto px-4 py-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Order not found</h1>
+          <p className="text-muted-foreground mt-2">The order you're looking for doesn't exist.</p>
+          <Link href="/driver/orders">
+            <Button className="mt-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Orders
+            </Button>
+          </Link>
+        </div>
       </div>
     )
   }
 
   const nextAction = getNextAction(order.status)
-  const estimatedEarnings = order.deliveryFee * 0.8
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/driver/orders">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Order #{order.id}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {new Date(order.createdAt).toLocaleDateString()} at{" "}
-              {new Date(order.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
+    <div className="container max-w-4xl mx-auto px-4 py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Link href="/driver/orders">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Orders
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Order #{order.id.slice(0, 8)}</h1>
+            <p className="text-muted-foreground">Delivery Details</p>
           </div>
         </div>
         <OrderStatusBadge status={order.status} />
       </div>
-
-      {/* Earnings Card */}
-      <Card className="mb-6 border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-700">Delivery Earnings</p>
-              <p className="text-2xl font-bold text-green-800">${estimatedEarnings.toFixed(2)}</p>
-            </div>
-            <div className="text-right text-sm text-green-600">
-              <p>Delivery Fee: ${order.deliveryFee.toFixed(2)}</p>
-              <p>Your Share: 80%</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
@@ -160,6 +168,11 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
           <Button onClick={() => handleStatusUpdate(nextAction.status)} disabled={isUpdating} className="sm:col-span-2">
             <nextAction.icon className="h-4 w-4 mr-2" />
             {isUpdating ? "Updating..." : nextAction.label}
+          </Button>
+        )}
+        {order.status === "DRIVER_ASSIGNED" && (
+          <Button onClick={handleAcceptDelivery} disabled={isAccepting} className="bg-emerald-700 hover:bg-emerald-800 sm:col-span-2">
+            {isAccepting ? "Accepting..." : "Accept Delivery"}
           </Button>
         )}
 
@@ -186,152 +199,138 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
       </div>
 
       {/* Pickup and Delivery Locations */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Pickup & Delivery</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 p-3 border rounded-lg">
-            <MapPin className="h-5 w-5 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="font-medium">Pickup Location</p>
-              <p className="text-sm text-muted-foreground">Mary's Diner</p>
-              <p className="text-sm text-muted-foreground">123 Main St, Rural Town</p>
-              <p className="text-xs text-muted-foreground mt-1">Restaurant • (555) 123-4567</p>
+      <div className="grid gap-6 md:grid-cols-2 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Pickup Location</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Restaurant Address</p>
+                <p className="text-sm text-muted-foreground">123 Main St, Rural Town</p>
+              </div>
             </div>
-            <a href={generateMapsLink("123 Main St, Rural Town")} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
-                <Navigation className="h-4 w-4 mr-1" />
-                Navigate
+            <a
+              href={generateMapsLink("123 Main St, Rural Town")}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="w-full">
+                <MapPin className="h-4 w-4 mr-2" />
+                Open in Maps
               </Button>
             </a>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-start gap-3 p-3 border rounded-lg border-red-200">
-            <MapPin className="h-5 w-5 mt-0.5 text-red-500" />
-            <div className="flex-1">
-              <p className="font-medium">Delivery Location</p>
-              <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
-              {order.deliveryTime && (
-                <p className="text-xs text-muted-foreground mt-1">Requested time: {order.deliveryTime}</p>
-              )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Delivery Location</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Customer Address</p>
+                <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
+              </div>
             </div>
-            <a href={generateMapsLink(order.deliveryAddress)} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
-                <Navigation className="h-4 w-4 mr-1" />
-                Navigate
+            <a
+              href={generateMapsLink(order.deliveryAddress)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="w-full">
+                <MapPin className="h-4 w-4 mr-2" />
+                Open in Maps
               </Button>
             </a>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Order Items */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Order Items</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {order.items.map((item, index) => (
-            <div key={index} className="flex justify-between items-center">
-              <div>
-                <span className="font-medium">
-                  {item.quantity}x {item.name}
-                </span>
-                <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} each</p>
-              </div>
-              <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
-
-          <Separator />
-
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span>Delivery Fee</span>
-            <span>${order.deliveryFee.toFixed(2)}</span>
-          </div>
-
-          <Separator />
-
-          <div className="flex justify-between font-medium text-lg">
-            <span>Total</span>
-            <span>${order.total.toFixed(2)}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Order Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Order Timeline</CardTitle>
-        </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <div>
-                <p className="text-sm font-medium">Order Placed</p>
-                <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p>
+          <div className="space-y-4">
+            {order.items.map((item, index) => (
+              <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                </div>
+                <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
               </div>
+            ))}
+            <Separator />
+            <div className="flex justify-between items-center font-bold">
+              <span>Total</span>
+              <span>${order.total.toFixed(2)}</span>
             </div>
-
-            {order.status !== "NEW" && (
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Order Confirmed</p>
-                  <p className="text-xs text-muted-foreground">By restaurant</p>
-                </div>
-              </div>
-            )}
-
-            {["PREPARING", "READY", "ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.status) && (
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Food Prepared</p>
-                  <p className="text-xs text-muted-foreground">Ready for pickup</p>
-                </div>
-              </div>
-            )}
-
-            {["ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.status) && (
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <div>
-                  <p className="text-sm font-medium">Driver Assigned</p>
-                  <p className="text-xs text-muted-foreground">You accepted this order</p>
-                </div>
-              </div>
-            )}
-
-            {["OUT_FOR_DELIVERY", "DELIVERED"].includes(order.status) && (
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-orange-500" />
-                <div>
-                  <p className="text-sm font-medium">Out for Delivery</p>
-                  <p className="text-xs text-muted-foreground">On the way to customer</p>
-                </div>
-              </div>
-            )}
-
-            {order.status === "DELIVERED" && (
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Delivered</p>
-                  <p className="text-xs text-muted-foreground">{new Date(order.updatedAt).toLocaleString()}</p>
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Order Information */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Order Time</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(order.createdAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            {order.deliveryTime && (
+              <div className="flex items-start gap-3">
+                <Truck className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium">Estimated Delivery</p>
+                  <p className="text-sm text-muted-foreground">{order.deliveryTime}</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between">
+              <span>Order Total</span>
+              <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Delivery Fee</span>
+              <span>${order.deliveryFee.toFixed(2)}</span>
+            </div>
+            {order.tip && (
+              <div className="flex justify-between">
+                <span>Tip</span>
+                <span>${order.tip.toFixed(2)}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between font-bold">
+              <span>Your Earnings</span>
+              <span>${(order.deliveryFee + (order.tip || 0)).toFixed(2)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

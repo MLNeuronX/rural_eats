@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
 import { User, Car, FileText, CreditCard, Clock, CheckCircle, ChevronRight, MapPin, AlertCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 
@@ -72,7 +71,6 @@ export default function DriverOnboarding() {
 
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -123,18 +121,9 @@ export default function DriverOnboarding() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      toast({
-        title: "Application submitted successfully!",
-        description: "We'll review your information and get back to you soon.",
-      })
-
       router.push("/driver/onboarding-success")
     } catch (error) {
-      toast({
-        title: "Something went wrong",
-        description: "Please try again later.",
-        variant: "destructive",
-      })
+      // Placeholder for error handling
     } finally {
       setIsLoading(false)
     }

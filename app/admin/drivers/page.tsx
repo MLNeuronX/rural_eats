@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
 import { Search, Plus, Edit, Eye, Phone, Mail, MapPin, Star } from "lucide-react"
 
 interface Driver {
@@ -213,7 +212,6 @@ export default function DriversPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all")
   const [onlineFilter, setOnlineFilter] = useState<"all" | "online" | "offline">("all")
-  const { toast } = useToast()
 
   const filterDrivers = () => {
     let filtered = drivers
@@ -251,16 +249,8 @@ export default function DriversPage() {
         d.id === driver.id ? { ...d, isActive: !d.isActive, isOnline: !d.isActive ? false : d.isOnline } : d,
       )
       setDrivers(updatedDrivers)
-      toast({
-        title: "Status updated",
-        description: `${driver.name} has been ${!driver.isActive ? "activated" : "suspended"}`,
-      })
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update driver status",
-        variant: "destructive",
-      })
+      // Handle error
     }
   }
 
@@ -268,16 +258,8 @@ export default function DriversPage() {
     try {
       const updatedDrivers = drivers.map((d) => (d.id === driver.id ? { ...d, isOnline: !d.isOnline } : d))
       setDrivers(updatedDrivers)
-      toast({
-        title: "Online status updated",
-        description: `${driver.name} is now ${!driver.isOnline ? "online" : "offline"}`,
-      })
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update driver online status",
-        variant: "destructive",
-      })
+      // Handle error
     }
   }
 

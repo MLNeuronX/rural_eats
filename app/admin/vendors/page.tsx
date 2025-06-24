@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
 import { Search, Plus, Edit, Eye, MapPin, Star } from "lucide-react"
 import { getVendors, updateVendorAvailability, type Vendor } from "@/lib/data"
 
@@ -111,7 +110,6 @@ export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all")
   const [isLoading, setIsLoading] = useState(true)
-  const { toast } = useToast()
 
   useEffect(() => {
     loadVendors()
@@ -125,12 +123,6 @@ export default function VendorsPage() {
     try {
       const vendorsData = await getVendors()
       setVendors(vendorsData)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load vendors",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }
@@ -159,22 +151,12 @@ export default function VendorsPage() {
 
   const handleToggleVendorStatus = async (vendor: Vendor) => {
     try {
-      const updatedVendor = await updateVendorAvailability(vendor.id, !vendor.isOpen)
+      const updatedVendor = await updateVendorAvailability(vendor.id, !vendor.isOpen);
       if (updatedVendor) {
-        setVendors(vendors.map((v) => (v.id === vendor.id ? updatedVendor : v)))
-        toast({
-          title: "Status updated",
-          description: `${vendor.name} is now ${!vendor.isOpen ? "open" : "closed"}`,
-        })
+        setVendors(vendors.map((v) => (v.id === vendor.id ? updatedVendor : v)));
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update vendor status",
-        variant: "destructive",
-      })
-    }
-  }
+    } catch (e) {}
+  };
 
   if (isLoading) {
     return (

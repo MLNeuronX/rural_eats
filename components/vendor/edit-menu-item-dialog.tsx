@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
 import { updateMenuItem, type MenuItem } from "@/lib/data"
 
 interface EditMenuItemDialogProps {
@@ -49,7 +48,6 @@ export function EditMenuItemDialog({ item, open, onOpenChange, onItemUpdated }: 
     category: "",
   })
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
 
   useEffect(() => {
     if (item) {
@@ -66,21 +64,11 @@ export function EditMenuItemDialog({ item, open, onOpenChange, onItemUpdated }: 
     e.preventDefault()
 
     if (!formData.name || !formData.description || !formData.price || !formData.category) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
       return
     }
 
     const price = Number.parseFloat(formData.price)
     if (isNaN(price) || price <= 0) {
-      toast({
-        title: "Invalid price",
-        description: "Please enter a valid price",
-        variant: "destructive",
-      })
       return
     }
 
@@ -96,18 +84,9 @@ export function EditMenuItemDialog({ item, open, onOpenChange, onItemUpdated }: 
 
       if (updatedItem) {
         onItemUpdated(updatedItem)
-
-        toast({
-          title: "Item updated",
-          description: `${updatedItem.name} has been updated.`,
-        })
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update menu item",
-        variant: "destructive",
-      })
+      // Handle error
     } finally {
       setIsLoading(false)
     }

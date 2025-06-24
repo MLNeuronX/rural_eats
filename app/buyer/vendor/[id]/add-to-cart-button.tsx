@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
 import { Plus } from "lucide-react"
 import { useCart } from "@/components/buyer/cart-provider"
 import type { MenuItem } from "@/lib/data"
@@ -16,7 +15,6 @@ export function AddToCartButton({
 }) {
   const [isAdding, setIsAdding] = useState(false)
   const { addItem } = useCart()
-  const { toast } = useToast()
 
   const handleAddToCart = () => {
     setIsAdding(true)
@@ -24,12 +22,6 @@ export function AddToCartButton({
     // Simulate a small delay for better UX
     setTimeout(() => {
       addItem(menuItem)
-
-      toast({
-        title: "Added to cart",
-        description: `${menuItem.name} has been added to your cart.`,
-        duration: 2000,
-      })
 
       setIsAdding(false)
     }, 300)
