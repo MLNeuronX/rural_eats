@@ -36,4 +36,18 @@ const VendorOrdersPage = () => {
       const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
       const response = await authFetch(`${baseApiUrl}/api/vendor/orders`)
       if (!response.ok) {
-        throw new Error(`
+        throw new Error('Failed to fetch vendor orders');
+      }
+      const data = await response.json()
+      setOrders(data)
+    } catch (error) {
+      // handle error
+    }
+    setLoading(false);
+  };
+
+  // ...rest of your code...
+  return null;
+}
+
+export default VendorOrdersPage;
