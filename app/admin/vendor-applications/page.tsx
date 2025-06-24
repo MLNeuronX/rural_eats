@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import { authFetch } from "@/lib/utils"
 
 interface VendorApplication {
   id: string
@@ -28,7 +28,6 @@ export default function VendorApplicationsPage() {
   const [applications, setApplications] = useState<VendorApplication[]>([])
   const [search, setSearch] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const { toast } = useToast()
 
   useEffect(() => {
     fetchApplications()
@@ -37,13 +36,13 @@ export default function VendorApplicationsPage() {
   const fetchApplications = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch("/api/admin/vendor-applications", {
+      const res = await authFetch("/api/admin/vendor-applications", {
         credentials: "include"
       })
       const data = await res.json()
       setApplications(data.applications || [])
     } catch (error) {
-      toast({ title: "Error", description: "Failed to load applications", variant: "destructive" })
+      // toast({ title: "Error", description: "Failed to load applications", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -51,7 +50,7 @@ export default function VendorApplicationsPage() {
 
   const handleAction = async (id: string, action: "approve" | "reject", notes?: string) => {
     try {
-      const res = await fetch(`/api/admin/vendor-applications/${id}/${action}`, {
+      const res = await authFetch(`/api/admin/vendor-applications/${id}/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -59,13 +58,13 @@ export default function VendorApplicationsPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        toast({ title: `Application ${action}d`, description: data.message })
+        // toast({ title: `Application ${action}d`, description: data.message })
         fetchApplications()
       } else {
-        toast({ title: "Error", description: data.error || "Action failed", variant: "destructive" })
+        // toast({ title: "Error", description: data.error || "Action failed", variant: "destructive" })
       }
     } catch (error) {
-      toast({ title: "Error", description: "Action failed", variant: "destructive" })
+      // toast({ title: "Error", description: "Action failed", variant: "destructive" })
     }
   }
 
@@ -99,7 +98,7 @@ export default function VendorApplicationsPage() {
                     <div className="font-semibold text-lg">{app.business_name}</div>
                     <div className="text-muted-foreground text-sm">{app.first_name} {app.last_name} ({app.email})</div>
                   </div>
-                  <Badge variant={app.status === "pending" ? "secondary" : app.status === "approved" ? "success" : "destructive"}>
+                  <Badge variant={app.status === "pending" ? "secondary" : app.status === "approved" ? "secondary" : "destructive"}>
                     {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                   </Badge>
                 </div>

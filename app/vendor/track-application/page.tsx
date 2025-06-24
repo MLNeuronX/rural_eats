@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
 import { Search, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { authFetch } from "@/lib/utils"
 
 type ApplicationStatus = "pending" | "approved" | "rejected" | "under_review"
 
@@ -30,24 +30,18 @@ export default function TrackApplicationPage() {
   const [applicationId, setApplicationId] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [application, setApplication] = useState<ApplicationData | null>(null)
-  const { toast } = useToast()
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!email && !applicationId) {
-      toast({
-        title: "Search criteria required",
-        description: "Please enter either your email or application ID",
-        variant: "destructive",
-      })
       return
     }
 
     setIsSearching(true)
 
     try {
-      const response = await fetch('https://rural-eats-backend.onrender.com/api/vendor/track-application', {
+      const response = await authFetch('https://rural-eats-backend.onrender.com/api/vendor/track-application', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,26 +52,12 @@ export default function TrackApplicationPage() {
       if (response.ok) {
         const data = await response.json()
         setApplication(data)
-        toast({
-          title: "Application found",
-          description: "Your application details are displayed below",
-        })
       } else {
         const error = await response.json()
         setApplication(null)
-        toast({
-          title: "Application not found",
-          description: error.error || "No application found with the provided information",
-          variant: "destructive",
-        })
       }
     } catch (error) {
       console.error('Search error:', error)
-      toast({
-        title: "Search failed",
-        description: "Please try again later",
-        variant: "destructive",
-      })
     } finally {
       setIsSearching(false)
     }

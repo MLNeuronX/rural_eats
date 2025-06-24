@@ -8,8 +8,8 @@ import { ArrowLeft, Clock, MapPin, MessageCircle, CheckCircle, ChefHat, Package,
 import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
 import { AssignDriverDialog } from "@/components/vendor/assign-driver-dialog"
+import { authFetch } from "@/lib/utils"
 
 // @ts-ignore
 const statusMap = {
@@ -33,7 +33,7 @@ const VendorOrdersPage = () => {
   const loadOrders = async () => {
     setLoading(true)
     try {
-      const response = await fetch("https://rural-eats-backend.onrender.com/api/vendor/orders")
+      const response = await authFetch("https://rural-eats-backend.onrender.com/api/vendor/orders")
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -41,11 +41,6 @@ const VendorOrdersPage = () => {
       setOrders(data)
     } catch (error) {
       console.error("Could not fetch orders:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load orders",
-        variant: "destructive",
-      })
     } finally {
       setLoading(false)
     }
