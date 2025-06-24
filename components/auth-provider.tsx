@@ -54,10 +54,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // On initial load, try to get user data if a token exists
   useEffect(() => {
     const initializeAuth = async () => {
-      // In a real app, you would verify a token from localStorage here
-      // For now, we start with no user logged in.
-      setUser(null);
-      setRole(null);
+      // Check localStorage for saved user and token
+      const savedUser = localStorage.getItem('user');
+      const savedRole = localStorage.getItem('role');
+      if (savedUser && savedRole) {
+        setUser(JSON.parse(savedUser));
+        setRole(savedRole as Role);
+      }
       setIsLoading(false);
       setIsInitialized(true);
     };
@@ -68,23 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
-
-    // All roles (including vendor) should use the user login endpoint
     const endpoint = 'https://rural-eats-backend.onrender.com/api/user/login';
-
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, role }), // 'role' is needed for the general user login
+        body: JSON.stringify({ email, password, role }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        // Successful login
         const loggedInUser: User = {
           id: data.user?.id || data.vendor?.id,
           name: data.user?.email || data.vendor?.business_name,
@@ -93,14 +90,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(loggedInUser);
         setRole(role);
-        // In a real app, save data.access_token to localStorage
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        localStorage.setItem('role', role || '');
+        if (data.access_token) {
+          localStorage.setItem('token', data.access_token);
+        }
         return { success: true };
-
       } else if (response.status === 202 && data.login_status === 'application_pending') {
-        // Application is pending
         return { success: false, login_status: 'application_pending', application: data.application };
       } else {
-        // Other login failures
         return { success: false, error: data.error || 'Login failed' };
       }
     } catch (error) {
@@ -114,7 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setUser(null)
     setRole(null)
-    // In a real app, remove token from localStorage
+    // Remove from localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    localStorage.removeItem('token');
   }, []);
 
   const switchRole = useCallback((newRole: Role) => {

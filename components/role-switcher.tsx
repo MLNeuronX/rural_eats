@@ -39,6 +39,16 @@ const roleConfig = {
   },
 }
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+if (!isDev) {
+  return (
+    <div className="p-4 text-center text-red-500">
+      Role switcher is disabled in production.
+    </div>
+  );
+}
+
 export function RoleSwitcher() {
   const [isOpen, setIsOpen] = useState(false)
   const { role, switchRole } = useAuth()
