@@ -1,4 +1,4 @@
-import type React from "react"
+import React, { ReactNode } from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
@@ -14,16 +14,16 @@ export const metadata: Metadata = {
     generator: 'v0.dev'
 }
 
-class GlobalErrorBoundary extends React.Component {
-  constructor(props) {
+class GlobalErrorBoundary extends React.Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-  componentDidCatch(error, errorInfo) {
-    toast({ title: "An error occurred", description: error.message || "Unknown error" });
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    toast("An error occurred: " + (error.message || "Unknown error"));
   }
   render() {
     if (this.state.hasError) {
