@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { useCart } from "@/components/buyer/cart-provider"
+import { useCart } from "../../../../components/buyer/cart-provider"
 import type { MenuItem } from "@/lib/data"
 
 export function AddToCartButton({
