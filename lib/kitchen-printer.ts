@@ -37,20 +37,25 @@ export class KitchenPrinterService {
   private printerName = ''
   private availablePrinters: PrinterInfo[] = []
   private connectionListeners: ((connected: boolean) => void)[] = []
+  private initialized = false
 
   constructor() {
     this.loadSavedPrinterSettings()
-    this.initializePrinter()
+    // Don't initialize immediately to avoid SSR issues
+    // Will be initialized when first accessed
   }
 
   private loadSavedPrinterSettings() {
     try {
-      const savedSettings = localStorage.getItem('kitchenPrinterSettings')
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings)
-        this.printerIP = settings.ipAddress || this.printerIP
-        this.printerPort = settings.port || this.printerPort
-        this.printerName = settings.name || ''
+      // Check if we're in a browser environment before accessing localStorage
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedSettings = localStorage.getItem('kitchenPrinterSettings')
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings)
+          this.printerIP = settings.ipAddress || this.printerIP
+          this.printerPort = settings.port || this.printerPort
+          this.printerName = settings.name || ''
+        }
       }
     } catch (error) {
       console.error('Failed to load saved printer settings:', error)
@@ -59,12 +64,15 @@ export class KitchenPrinterService {
 
   private savePrinterSettings() {
     try {
-      const settings = {
-        ipAddress: this.printerIP,
-        port: this.printerPort,
-        name: this.printerName,
+      // Check if we're in a browser environment before accessing localStorage
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const settings = {
+          ipAddress: this.printerIP,
+          port: this.printerPort,
+          name: this.printerName,
+        }
+        localStorage.setItem('kitchenPrinterSettings', JSON.stringify(settings))
       }
-      localStorage.setItem('kitchenPrinterSettings', JSON.stringify(settings))
     } catch (error) {
       console.error('Failed to save printer settings:', error)
     }
@@ -133,7 +141,8 @@ export class KitchenPrinterService {
   }
 
   // Get printer info
-  public getPrinterInfo(): PrinterInfo {
+  public async getPrinterInfo(): Promise<PrinterInfo> {
+    await this.ensureInitialized()
     return {
       name: this.printerName,
       ipAddress: this.printerIP,
@@ -172,6 +181,8 @@ export class KitchenPrinterService {
 
   public async printOrder(printData: KitchenPrintData): Promise<boolean> {
     try {
+      await this.ensureInitialized()
+
       if (!this.isConnected) {
         console.warn('Kitchen printer not connected, attempting to reconnect...')
         await this.initializePrinter()
@@ -289,6 +300,13 @@ export class KitchenPrinterService {
   public async disconnect(): Promise<void> {
     this.isConnected = false
     console.log('Kitchen printer disconnected')
+  }
+
+  private async ensureInitialized() {
+    if (!this.initialized && typeof window !== 'undefined') {
+      await this.initializePrinter()
+      this.initialized = true
+    }
   }
 }
 

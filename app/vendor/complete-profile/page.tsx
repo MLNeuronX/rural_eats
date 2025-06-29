@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function VendorCompleteProfilePage() {
+function VendorCompleteProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendorId");
@@ -82,5 +82,13 @@ export default function VendorCompleteProfilePage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function VendorCompleteProfilePage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <VendorCompleteProfileContent />
+    </Suspense>
   );
 } 

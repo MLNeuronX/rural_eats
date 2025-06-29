@@ -31,18 +31,26 @@ export default function PrinterSettings({ onSave, saveSuccess, isLoading }: Prin
 
   // Load printer settings on component mount
   useEffect(() => {
-    const info = printerService.getPrinterInfo()
-    setPrinterInfo(info)
+    const loadPrinterInfo = async () => {
+      try {
+        const info = await printerService.getPrinterInfo()
+        setPrinterInfo(info)
 
-    // Add connection listener
-    const listener = (connected: boolean) => {
-      setPrinterInfo(prev => ({ ...prev, isConnected: connected }))
-    }
-    printerService.addConnectionListener(listener)
+        // Add connection listener
+        const listener = (connected: boolean) => {
+          setPrinterInfo(prev => ({ ...prev, isConnected: connected }))
+        }
+        printerService.addConnectionListener(listener)
 
-    return () => {
-      printerService.removeConnectionListener(listener)
+        return () => {
+          printerService.removeConnectionListener(listener)
+        }
+      } catch (error) {
+        console.error('Failed to load printer info:', error)
+      }
     }
+
+    loadPrinterInfo()
   }, [])
 
   const handlePrinterInfoChange = (field: keyof PrinterInfo, value: string) => {
