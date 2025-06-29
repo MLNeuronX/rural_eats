@@ -43,7 +43,7 @@ export function AssignDriverDialog({ open, onOpenChange, orderId, onDriverAssign
   const fetchAvailableDrivers = async () => {
     setIsLoading(true)
     try {
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const response = await authFetch(`${baseApiUrl}/api/vendor/available-drivers`);
       
       if (response.ok) {
@@ -64,7 +64,7 @@ export function AssignDriverDialog({ open, onOpenChange, orderId, onDriverAssign
   const handleAssignDriver = async (driver: Driver) => {
     setIsAssigning(driver.id)
     try {
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${orderId}/assign-driver`, {
         method: 'POST',
         headers: {

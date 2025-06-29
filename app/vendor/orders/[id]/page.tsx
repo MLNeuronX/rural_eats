@@ -143,7 +143,7 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
 
     setIsUpdating(true);
     try {
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/status`, {
         method: 'PUT',
         headers: {
@@ -181,7 +181,7 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
     if (!order) return;
     
     try {
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/assign-driver`, {
         method: 'POST',
         headers: {
@@ -222,7 +222,7 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
     setIsAccepting(true)
     try {
       // Call the real backend endpoint
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/accept`, {
         method: 'POST',
         headers: {

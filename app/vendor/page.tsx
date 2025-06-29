@@ -59,7 +59,7 @@ export default function VendorDashboard() {
       setLoading(true)
       setError("")
       try {
-        const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+        const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
         const res = await authFetch(`${baseApiUrl}/api/order/vendor/orders`)
         if (!res.ok) throw new Error("Failed to fetch orders")
         const data = await res.json()
@@ -101,7 +101,7 @@ export default function VendorDashboard() {
     const fetchAnalytics = async () => {
       setAnalyticsLoading(true)
       try {
-        const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+        const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
         
         // Calculate real analytics from existing orders data
         const realAnalytics = calculateRealAnalytics(orders);

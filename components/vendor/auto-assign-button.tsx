@@ -19,7 +19,7 @@ export function AutoAssignButton({ orderId, onDriverAssigned, disabled }: AutoAs
     setIsLoading(true)
     try {
       // First, get available drivers
-      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
       const driversResponse = await authFetch(`${baseApiUrl}/api/vendor/available-drivers`);
       
       if (!driversResponse.ok) {

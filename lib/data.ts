@@ -89,7 +89,7 @@ export async function getVendors(filters?: {
     if (filters?.isOpen !== undefined) queryParams.append('is_open', filters.isOpen.toString());
     
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
     const res = await fetch(`${baseApiUrl}/api/vendors${queryString}`, {
       method: 'GET',
       headers: {
@@ -170,7 +170,7 @@ export async function getAdminVendors() {
 export async function getVendorById(id: string) {
   try {
     // Use the public vendor endpoint instead of admin endpoint
-    const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
     const res = await fetch(`${baseApiUrl}/api/vendors/${id}`, {
       method: 'GET',
       headers: {
@@ -208,7 +208,7 @@ export async function getVendorById(id: string) {
 
 export async function getMenuItems(vendorId: string) {
   try {
-    const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
     const res = await fetch(`${baseApiUrl}/api/menu/vendor/${vendorId}/items`, {
       method: 'GET',
       headers: {
