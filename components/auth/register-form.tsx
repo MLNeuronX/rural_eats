@@ -52,14 +52,14 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
 
     setIsLoading(true)
 
-    const baseApiUrl = "http://127.0.0.1:5000/api";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com"
 
     try {
       let requestData;
       let endpoint;
 
       if (role === "vendor") {
-        endpoint = `${baseApiUrl}/vendor/register`;
+        endpoint = `${baseApiUrl}/api/vendor/register`;
         requestData = {
           first_name: formData.firstName,
           last_name: formData.lastName,
@@ -71,7 +71,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
           business_type: formData.businessType,
         };
       } else if (role === "driver") {
-        endpoint = `${baseApiUrl}/driver/register`;
+        endpoint = `${baseApiUrl}/api/driver/register`;
         requestData = {
           first_name: formData.firstName,
           last_name: formData.lastName,
@@ -80,7 +80,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
           password: formData.password,
         };
       } else { // buyer
-        endpoint = `${baseApiUrl}/buyer/register`;
+        endpoint = `${baseApiUrl}/api/buyer/register`;
         requestData = {
           first_name: formData.firstName,
           last_name: formData.lastName,

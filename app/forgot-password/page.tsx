@@ -8,19 +8,21 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
     try {
-      const baseApiUrl = "http://127.0.0.1:5000";
-      const res = await fetch(`${baseApiUrl}/api/user/forgot-password`, {
+      const response = await fetch(`${baseApiUrl}/api/user/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (res.ok) {
+      if (response.ok) {
         setSent(true);
         showToast('success', "Check your email for a password reset link.");
       } else {

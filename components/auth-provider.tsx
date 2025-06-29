@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
     const endpoint = `${baseApiUrl}/api/user/login`;
     try {
       const response = await fetch(endpoint, {
@@ -130,8 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchVendorProfile = useCallback(async (): Promise<VendorProfile | null> => {
     if (!user || user.role !== 'vendor') return null;
     const token = localStorage.getItem('token');
-    const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
-    const res = await fetch(`${baseApiUrl}/vendor/profile`, {
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+    const res = await fetch(`${baseApiUrl}/api/vendor/profile`, {
       headers: { 'Authorization': `Bearer ${token}` },
       credentials: 'include',
     });
