@@ -54,14 +54,6 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
     const unsubscribeReadyForPickup = realtimeService.subscribe('ready_for_pickup', (notification) => {
       if (notification.orderId === params.id) {
         showToast('warning', 'Order is ready for pickup!')
-          duration: 10000,
-          action: {
-            label: 'View Order',
-            onClick: () => {
-              // Order details are already loaded
-            }
-          }
-        })
       }
     })
 
