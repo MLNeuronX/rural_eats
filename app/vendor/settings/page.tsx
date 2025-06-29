@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,24 +8,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Store, Clock, Bell, CreditCard, Menu, Save, Upload, Copy, CheckCircle } from "lucide-react"
+import { Store, Clock, Bell, CreditCard, Menu, Save, Upload, Copy, CheckCircle, Printer } from "lucide-react"
+import PrinterSettings from "@/components/vendor/printer-settings"
 import { motion } from "framer-motion"
+import { authFetch } from "@/lib/utils"
 
 export default function VendorSettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
 
   const [businessInfo, setBusinessInfo] = useState({
-    name: "Mary's Diner",
-    description: "Classic American comfort food",
-    phone: "(555) 123-4567",
-    email: "contact@marysdiner.com",
-    address: "123 Main St",
-    city: "Rural Town",
-    state: "ST",
-    zipCode: "12345",
-    cuisineType: "American",
-    priceRange: "medium",
+    businessName: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
+    email: "",
   })
 
   const [operatingHours, setOperatingHours] = useState({
@@ -50,7 +49,7 @@ export default function VendorSettingsPage() {
   })
 
   const [paymentInfo, setPaymentInfo] = useState({
-    accountName: "Mary's Diner LLC",
+    accountName: "",
     accountNumber: "****6789",
     routingNumber: "****4321",
     paymentMethod: "direct_deposit",
@@ -66,6 +65,26 @@ export default function VendorSettingsPage() {
     email: true,
     push: true,
     sms: false,
+  })
+
+  const [stripeAccount, setStripeAccount] = useState({
+    accountId: "",
+    accountName: "",
+    isActive: false,
+    payoutsEnabled: false,
+    chargesEnabled: false,
+  })
+
+  // Add refs for file inputs
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  // Add image URLs to businessInfo state
+  const [photos, setPhotos] = useState({
+    logo: "",
+    cover: "",
+    gallery: [] as string[],
   })
 
   const handleBusinessInfoChange = (field: string, value: string) => {
@@ -136,30 +155,26 @@ export default function VendorSettingsPage() {
 
   const applyWeekdayWeekendHours = () => {
     const updatedHours = { ...operatingHours }
-
-    // Set weekday hours (Monday-Friday)
+    const weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    const weekends = ["saturday", "sunday"]
     const weekdayOpen = "07:00"
     const weekdayClose = "21:00"
-
-    // Set weekend hours (Saturday-Sunday)
     const weekendOpen = "08:00"
-    const weekendClose = "22:00"[("monday", "tuesday", "wednesday", "thursday", "friday")]
-      .forEach((day) => {
-        updatedHours[day as keyof typeof updatedHours] = {
-          ...updatedHours[day as keyof typeof updatedHours],
+    const weekendClose = "22:00"
+    weekdays.forEach((day) => {
+      updatedHours[day] = {
+        ...updatedHours[day],
           open: weekdayOpen,
           close: weekdayClose,
         }
       })
-
-      [("saturday", "sunday")].forEach((day) => {
-        updatedHours[day as keyof typeof updatedHours] = {
-          ...updatedHours[day as keyof typeof updatedHours],
+    weekends.forEach((day) => {
+      updatedHours[day] = {
+        ...updatedHours[day],
           open: weekendOpen,
           close: weekendClose,
         }
       })
-
     setOperatingHours(updatedHours)
   }
 
@@ -179,6 +194,34 @@ export default function VendorSettingsPage() {
       // Handle error
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Simulate upload (replace with real upload logic)
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "cover" | "gallery") => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append("photo", file)
+    formData.append("type", type)
+    try {
+      const response = await authFetch("/api/vendor/upload-photo", {
+        method: "POST",
+        body: formData,
+      })
+      if (!response.ok) throw new Error("Upload failed")
+      const data = await response.json()
+      const url = data.url
+      setPhotos((prev) => {
+        if (type === "gallery") {
+          return { ...prev, gallery: [...prev.gallery, url] }
+        } else {
+          return { ...prev, [type]: url }
+        }
+      })
+    } catch (err) {
+      // Optionally show a toast error
+      console.error("Photo upload failed", err)
     }
   }
 
@@ -218,7 +261,7 @@ export default function VendorSettingsPage() {
       </div>
 
       <Tabs defaultValue="business" className="space-y-4">
-        <TabsList className="grid grid-cols-5 h-auto bg-parchment">
+        <TabsList className="grid grid-cols-6 h-auto bg-parchment">
           <TabsTrigger
             value="business"
             className="flex flex-col items-center py-2 px-4 data-[state=active]:bg-forest-green data-[state=active]:text-white"
@@ -239,6 +282,13 @@ export default function VendorSettingsPage() {
           >
             <Menu className="h-4 w-4 mb-1" />
             <span className="text-xs">Menu</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="printer"
+            className="flex flex-col items-center py-2 px-4 data-[state=active]:bg-forest-green data-[state=active]:text-white"
+          >
+            <Printer className="h-4 w-4 mb-1" />
+            <span className="text-xs">Printer</span>
           </TabsTrigger>
           <TabsTrigger
             value="payment"
@@ -268,8 +318,8 @@ export default function VendorSettingsPage() {
                 <Label htmlFor="name">Restaurant Name</Label>
                 <Input
                   id="name"
-                  value={businessInfo.name}
-                  onChange={(e) => handleBusinessInfoChange("name", e.target.value)}
+                  value={businessInfo.businessName}
+                  onChange={(e) => handleBusinessInfoChange("businessName", e.target.value)}
                   className="border-forest-green/20 focus-visible:ring-forest-green/30"
                 />
               </div>
@@ -388,28 +438,65 @@ export default function VendorSettingsPage() {
                 <Label>Restaurant Photos</Label>
                 <div className="mt-2 grid grid-cols-3 gap-4">
                   <motion.div
-                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center"
+                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center cursor-pointer"
                     whileHover={{ scale: 1.02, borderColor: "rgba(46, 125, 50, 0.5)" }}
                     transition={{ duration: 0.2 }}
+                    onClick={() => logoInputRef.current?.click()}
                   >
+                    {photos.logo ? (
+                      <img src={photos.logo} alt="Logo" className="h-16 w-16 object-contain mx-auto mb-2" />
+                    ) : (
                     <Upload className="h-8 w-8 mx-auto text-forest-green/60 mb-2" />
+                    )}
                     <p className="text-sm text-forest-green/80">Upload Logo</p>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(e, "logo")}
+                    />
                   </motion.div>
                   <motion.div
-                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center"
+                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center cursor-pointer"
                     whileHover={{ scale: 1.02, borderColor: "rgba(46, 125, 50, 0.5)" }}
                     transition={{ duration: 0.2 }}
+                    onClick={() => coverInputRef.current?.click()}
                   >
+                    {photos.cover ? (
+                      <img src={photos.cover} alt="Cover" className="h-16 w-full object-cover mx-auto mb-2" />
+                    ) : (
                     <Upload className="h-8 w-8 mx-auto text-forest-green/60 mb-2" />
+                    )}
                     <p className="text-sm text-forest-green/80">Upload Cover</p>
+                    <input
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(e, "cover")}
+                    />
                   </motion.div>
                   <motion.div
-                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center"
+                    className="border-2 border-dashed border-forest-green/20 rounded-md p-4 text-center cursor-pointer"
                     whileHover={{ scale: 1.02, borderColor: "rgba(46, 125, 50, 0.5)" }}
                     transition={{ duration: 0.2 }}
+                    onClick={() => photoInputRef.current?.click()}
                   >
+                    <div className="flex flex-wrap justify-center gap-2 mb-2">
+                      {photos.gallery.map((url, idx) => (
+                        <img key={idx} src={url} alt="Gallery" className="h-10 w-10 object-cover rounded" />
+                      ))}
+                    </div>
                     <Upload className="h-8 w-8 mx-auto text-forest-green/60 mb-2" />
                     <p className="text-sm text-forest-green/80">Add Photo</p>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(e, "gallery")}
+                    />
                   </motion.div>
                 </div>
               </div>
@@ -577,14 +664,64 @@ export default function VendorSettingsPage() {
         </TabsContent>
 
         <TabsContent value="menu">
-          {/* Menu settings content - unchanged */}
           <Card className="border-forest-green/20">
             <CardHeader className="bg-parchment/30">
               <CardTitle className="text-forest-green">Menu Settings</CardTitle>
               <CardDescription>Configure your menu and order preferences</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              {/* Menu settings content */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={menuSettings.autoAcceptOrders}
+                    onCheckedChange={(v) => handleMenuSettingsChange("autoAcceptOrders", v)}
+                  />
+                  <Label>Auto-accept Orders</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Preparation Time (min)</Label>
+                  <Input
+                    type="number"
+                    value={menuSettings.preparationTime}
+                    onChange={(e) => handleMenuSettingsChange("preparationTime", Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Minimum Order Amount</Label>
+                  <Input
+                    type="number"
+                    value={menuSettings.minOrderAmount}
+                    onChange={(e) => handleMenuSettingsChange("minOrderAmount", Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Delivery Fee</Label>
+                  <Input
+                    type="number"
+                    value={menuSettings.deliveryFee}
+                    onChange={(e) => handleMenuSettingsChange("deliveryFee", Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={menuSettings.allowScheduledOrders}
+                    onCheckedChange={(v) => handleMenuSettingsChange("allowScheduledOrders", v)}
+                  />
+                  <Label>Allow Scheduled Orders</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Max Scheduled Days</Label>
+                  <Input
+                    type="number"
+                    value={menuSettings.maxScheduledDays}
+                    onChange={(e) => handleMenuSettingsChange("maxScheduledDays", Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+              </div>
               <div className="flex justify-end">
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button
@@ -614,15 +751,67 @@ export default function VendorSettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="printer">
+          <PrinterSettings 
+            onSave={() => saveSettings("printer")} 
+            saveSuccess={saveSuccess === "printer"} 
+            isLoading={isLoading} 
+          />
+        </TabsContent>
+
         <TabsContent value="payment">
-          {/* Payment settings content - unchanged */}
           <Card className="border-forest-green/20">
             <CardHeader className="bg-parchment/30">
               <CardTitle className="text-forest-green">Payment Information</CardTitle>
               <CardDescription>Manage your payout methods and tax information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              {/* Payment settings content */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Label>Account Name</Label>
+                  <Input
+                    value={paymentInfo.accountName}
+                    onChange={(e) => setPaymentInfo((p) => ({ ...p, accountName: e.target.value }))}
+                    className="w-64"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Account Number</Label>
+                  <Input
+                    value={paymentInfo.accountNumber}
+                    onChange={(e) => setPaymentInfo((p) => ({ ...p, accountNumber: e.target.value }))}
+                    className="w-64"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Routing Number</Label>
+                  <Input
+                    value={paymentInfo.routingNumber}
+                    onChange={(e) => setPaymentInfo((p) => ({ ...p, routingNumber: e.target.value }))}
+                    className="w-64"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Payment Method</Label>
+                  <select
+                    value={paymentInfo.paymentMethod}
+                    onChange={(e) => setPaymentInfo((p) => ({ ...p, paymentMethod: e.target.value }))}
+                    className="w-64 p-2 border rounded-md border-forest-green/20 focus:ring-forest-green/30 focus:outline-none focus:ring-2"
+                  >
+                    <option value="direct_deposit">Direct Deposit</option>
+                    <option value="check">Check</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label>Tax ID</Label>
+                  <Input
+                    value={paymentInfo.taxId}
+                    onChange={(e) => setPaymentInfo((p) => ({ ...p, taxId: e.target.value }))}
+                    className="w-64"
+                  />
+                </div>
+              </div>
               <div className="flex justify-end">
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button
@@ -653,14 +842,70 @@ export default function VendorSettingsPage() {
         </TabsContent>
 
         <TabsContent value="notifications">
-          {/* Notifications settings content - unchanged */}
           <Card className="border-forest-green/20">
             <CardHeader className="bg-parchment/30">
               <CardTitle className="text-forest-green">Notification Preferences</CardTitle>
               <CardDescription>Manage how you receive notifications</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              {/* Notifications settings content */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.newOrders}
+                    onCheckedChange={(v) => handleNotificationChange("newOrders", v)}
+                  />
+                  <Label>New Orders</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.orderUpdates}
+                    onCheckedChange={(v) => handleNotificationChange("orderUpdates", v)}
+                  />
+                  <Label>Order Updates</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.payouts}
+                    onCheckedChange={(v) => handleNotificationChange("payouts", v)}
+                  />
+                  <Label>Payouts</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.reviews}
+                    onCheckedChange={(v) => handleNotificationChange("reviews", v)}
+                  />
+                  <Label>Reviews</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.news}
+                    onCheckedChange={(v) => handleNotificationChange("news", v)}
+                  />
+                  <Label>News</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.email}
+                    onCheckedChange={(v) => handleNotificationChange("email", v)}
+                  />
+                  <Label>Email</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.push}
+                    onCheckedChange={(v) => handleNotificationChange("push", v)}
+                  />
+                  <Label>Push</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={notifications.sms}
+                    onCheckedChange={(v) => handleNotificationChange("sms", v)}
+                  />
+                  <Label>SMS</Label>
+                </div>
+              </div>
               <div className="flex justify-end">
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button

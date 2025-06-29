@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ interface AddMenuItemDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onItemAdded: (item: MenuItem) => void
+  vendorId: string
 }
 
 const categories = [
@@ -39,7 +40,7 @@ const categories = [
   "Sides",
 ]
 
-export function AddMenuItemDialog({ open, onOpenChange, onItemAdded }: AddMenuItemDialogProps) {
+export function AddMenuItemDialog({ open, onOpenChange, onItemAdded, vendorId }: AddMenuItemDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -47,43 +48,82 @@ export function AddMenuItemDialog({ open, onOpenChange, onItemAdded }: AddMenuIt
     category: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
-    if (!formData.name || !formData.description || !formData.price || !formData.category) {
+    // Validate required fields
+    const missingFields = [];
+    if (!formData.name || formData.name.trim() === "") missingFields.push("Name");
+    if (!formData.description || formData.description.trim() === "") missingFields.push("Description");
+    if (!formData.price || formData.price.trim() === "") missingFields.push("Price");
+    if (!formData.category || formData.category.trim() === "") missingFields.push("Category");
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(", ")}`)
       return
     }
 
+    // Validate price format and value
     const price = Number.parseFloat(formData.price)
     if (isNaN(price) || price <= 0) {
+      setError("Price must be a valid number greater than zero")
+      return
+    }
+
+    // Validate vendor ID
+    if (!vendorId || vendorId.trim() === "") {
+      setError("Vendor ID is missing. Please refresh the page and try again.")
+      console.error("Vendor ID is missing when trying to create menu item")
       return
     }
 
     setIsLoading(true)
 
     try {
-      const newItem = await createMenuItem({
-        vendorId: "v1", // Mock vendor ID
+      console.log("Creating menu item with vendor ID:", vendorId)
+      console.log("Menu item data:", {
         name: formData.name,
         description: formData.description,
         price: price,
-        category: formData.category,
+        category: formData.category
+      })
+      
+      const newItem = await createMenuItem({
+        vendorId: vendorId.trim(),
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: price,
+        category: formData.category.trim(),
         image: "/placeholder.svg?height=100&width=100",
         available: true,
       })
 
+      console.log("Menu item created successfully:", newItem)
       onItemAdded(newItem)
 
-      // Reset form
+      // Reset form and close dialog
       setFormData({
         name: "",
         description: "",
         price: "",
         category: "",
       })
-    } catch (error) {
-      // Handle error
+      onOpenChange(false) // Close the dialog after successful creation
+    } catch (error: any) {
+      console.error("Error creating menu item:", error)
+      // Display a more specific error message if available
+      if (error?.message?.includes("Network error")) {
+        setError("Network error: Please check your connection and ensure the server is running.")
+      } else if (error?.message?.includes("401")) {
+        setError("Authentication error: Please log in again.")
+      } else if (error?.message?.includes("403")) {
+        setError("Authorization error: You don't have permission to create menu items.")
+      } else {
+        setError(error?.message || "Failed to create menu item. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -96,6 +136,12 @@ export function AddMenuItemDialog({ open, onOpenChange, onItemAdded }: AddMenuIt
           <DialogTitle>Add Menu Item</DialogTitle>
           <DialogDescription>Add a new item to your restaurant menu.</DialogDescription>
         </DialogHeader>
+        
+        {error && (
+          <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">

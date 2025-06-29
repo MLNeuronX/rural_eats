@@ -11,6 +11,7 @@ import { useAuth } from "@/components/auth-provider"
 import { getMenuItems, updateMenuItem, deleteMenuItem, type MenuItem } from "@/lib/data"
 import { AddMenuItemDialog } from "@/components/vendor/add-menu-item-dialog"
 import { EditMenuItemDialog } from "@/components/vendor/edit-menu-item-dialog"
+import { authFetch } from "@/lib/utils"
 
 export default function MenuManagement() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -18,16 +19,55 @@ export default function MenuManagement() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const { user } = useAuth()
+  const [vendorId, setVendorId] = useState<string>("")
 
   useEffect(() => {
-    if (user) {
-      loadMenuItems()
-    }
-  }, [user])
+    const fetchVendorProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No token found");
+          setIsLoading(false);
+          return;
+        }
 
-  const loadMenuItems = async () => {
+        const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+        console.log("Fetching vendor profile from:", `${baseApiUrl}/api/vendor/profile`);
+        
+        const res = await fetch(`${baseApiUrl}/api/vendor/profile`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Vendor profile data:", data);
+          setVendorId(data.vendor.id);
+          await loadMenuItems(data.vendor.id);
+        } else {
+          console.error("Failed to fetch vendor profile:", res.status, res.statusText);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor profile:", error);
+        setIsLoading(false);
+        // Show user-friendly error message
+        alert("Unable to connect to server. Please check if the backend is running and try again.");
+      }
+    };
+    
+    fetchVendorProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const loadMenuItems = async (vId: string) => {
     try {
-      const items = await getMenuItems("v1") // Mock vendor ID
+      const items = await getMenuItems(vId)
       setMenuItems(items)
     } finally {
       setIsLoading(false)
@@ -39,7 +79,6 @@ export default function MenuManagement() {
       const updatedItem = await updateMenuItem(item.id, {
         available: !item.available,
       });
-
       if (updatedItem) {
         setMenuItems((items) => items.map((i) => (i.id === item.id ? updatedItem : i)));
       }
@@ -50,10 +89,8 @@ export default function MenuManagement() {
     if (!window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
       return;
     }
-
     try {
       const success = await deleteMenuItem(item.id);
-
       if (success) {
         setMenuItems((items) => items.filter((i) => i.id !== item.id));
       }
@@ -114,7 +151,7 @@ export default function MenuManagement() {
           </div>
         </div>
 
-        <Button onClick={() => setShowAddDialog(true)}>
+        <Button onClick={() => setShowAddDialog(true)} disabled={!vendorId}>
           <Plus className="h-4 w-4 mr-2" />
           Add Item
         </Button>
@@ -127,7 +164,7 @@ export default function MenuManagement() {
               <DollarSign className="h-12 w-12 mx-auto mb-2" />
               <p>No menu items yet</p>
             </div>
-            <Button onClick={() => setShowAddDialog(true)}>
+            <Button onClick={() => setShowAddDialog(true)} disabled={!vendorId}>
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Item
             </Button>
@@ -183,7 +220,12 @@ export default function MenuManagement() {
         </div>
       )}
 
-      <AddMenuItemDialog open={showAddDialog} onOpenChange={setShowAddDialog} onItemAdded={handleItemAdded} />
+      <AddMenuItemDialog 
+        open={showAddDialog} 
+        onOpenChange={setShowAddDialog} 
+        onItemAdded={handleItemAdded} 
+        vendorId={vendorId} // Use vendor ID from profile
+      />
 
       {editingItem && (
         <EditMenuItemDialog

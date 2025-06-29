@@ -52,7 +52,7 @@ export async function createStripeConnectAccount(
   },
 ): Promise<StripeConnectAccount> {
   try {
-    // In a real implementation, this would call Stripe API
+    // TODO: Implement real Stripe API integration
     // const account = await stripe.accounts.create({
     //   type: 'express',
     //   country: 'US',
@@ -72,20 +72,7 @@ export async function createStripeConnectAccount(
     //   }
     // })
 
-    // Simulate API response
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const mockAccount: StripeConnectAccount = {
-      id: `connect_${Date.now()}`,
-      userId,
-      accountId: `acct_${Math.random().toString(36).substr(2, 9)}`,
-      accountType,
-      isActive: false, // Requires onboarding completion
-      payoutsEnabled: false,
-      chargesEnabled: false,
-    }
-
-    return mockAccount
+    throw new Error("Stripe Connect integration not implemented")
   } catch (error) {
     console.error("Error creating Stripe Connect account:", error)
     throw new Error("Failed to create payment account")

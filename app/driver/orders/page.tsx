@@ -54,7 +54,7 @@ export default function DriverOrdersPage() {
       const availableResponse = await authFetch('/api/order/driver/available-orders')
       if (availableResponse.ok) {
         const availableData = await availableResponse.json()
-        setAvailableOrders(availableData.available_orders)
+        setAvailableOrders(availableData.orders)
       }
 
       // Load assigned orders
@@ -64,7 +64,7 @@ export default function DriverOrdersPage() {
         setAssignedOrders(assignedData.orders)
       }
     } catch (error) {
-      showToast.error('Failed to load orders')
+      showToast('error', 'Failed to load orders')
     } finally {
       setIsLoading(false)
     }
@@ -79,14 +79,14 @@ export default function DriverOrdersPage() {
       })
 
       if (response.ok) {
-        showToast.success('Order accepted successfully!')
+        showToast('success', 'Order accepted successfully!')
         loadOrders() // Refresh orders
       } else {
         const error = await response.json()
-        showToast.error(error.error || 'Failed to accept order')
+        showToast('error', error.error || 'Failed to accept order')
       }
     } catch (error) {
-      showToast.error('Network error. Please try again.')
+      showToast('error', 'Network error. Please try again.')
     } finally {
       setIsAccepting(null)
     }

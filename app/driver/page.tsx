@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,42 +8,151 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { DollarSign, TrendingUp, Navigation, Settings, User, Zap, Target, Award } from "lucide-react"
+import { authFetch } from "@/lib/utils"
+import { showToast } from "@/components/ui/toast-provider"
+
+interface AvailableOrder {
+  id: string
+  restaurant: string
+  customer: string
+  pickup: string
+  delivery: string
+  distance: string
+  payout: number
+  time: string
+  xp: number
+}
 
 export default function DriverDashboard() {
-  const [isOnline, setIsOnline] = useState(true)
-  const [currentLevel, setCurrentLevel] = useState(7)
-  const [xpProgress, setXpProgress] = useState(65) // 65% to next level
-  const [dailyStreak, setDailyStreak] = useState(12)
+  const [isOnline, setIsOnline] = useState(false)
+  const [currentLevel, setCurrentLevel] = useState(0)
+  const [xpProgress, setXpProgress] = useState(0)
+  const [dailyStreak, setDailyStreak] = useState(0)
+  const [todayEarnings, setTodayEarnings] = useState(0)
+  const [deliveriesCount, setDeliveriesCount] = useState(0)
+  const [availableOrders, setAvailableOrders] = useState<AvailableOrder[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [earnings, setEarnings] = useState({
+    weekly: 0,
+    stats: {
+      acceptanceRate: 0,
+      customerRating: 0,
+      onTimeRate: 0,
+      totalDeliveries: 0
+    }
+  })
+  const [profileError, setProfileError] = useState("")
 
-  const [availableOrders, setAvailableOrders] = useState([
-    {
-      id: "DEL-001",
-      restaurant: "Mary's Diner",
-      customer: "John Smith",
-      pickup: "123 Main St",
-      delivery: "456 Oak Ave",
-      distance: "2.3 miles",
-      payout: 8.5,
-      time: "15 min",
-      xp: 25,
-    },
-    {
-      id: "DEL-002",
-      restaurant: "Pizza Palace",
-      customer: "Sarah Johnson",
-      pickup: "789 Pine St",
-      delivery: "321 Elm St",
-      distance: "1.8 miles",
-      payout: 6.75,
-      time: "12 min",
-      xp: 20,
-    },
-  ])
+  useEffect(() => {
+    loadDriverStats()
+    if (isOnline) {
+      loadAvailableOrders()
+      // Poll for new orders every 30 seconds
+      const interval = setInterval(loadAvailableOrders, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [isOnline])
 
-  const acceptOrder = (orderId: string) => {
-    setAvailableOrders((orders) => orders.filter((order) => order.id !== orderId))
-    // Simulate XP gain
-    setXpProgress((prev) => Math.min(prev + 25, 100))
+  const loadDriverStats = async () => {
+    try {
+      const res = await authFetch('/api/driver/stats')
+      if (!res.ok) {
+        const data = await res.json();
+        setProfileError(data.error || 'Failed to fetch driver stats');
+        setIsLoading(false);
+        return;
+      }
+      const data = await res.json()
+      setCurrentLevel(data.level)
+      setXpProgress(data.xpProgress)
+      setDailyStreak(data.dailyStreak)
+      setTodayEarnings(data.todayEarnings)
+      setDeliveriesCount(data.deliveriesCount)
+      setEarnings({
+        weekly: data.weeklyEarnings || 0,
+        stats: {
+          acceptanceRate: data.stats?.acceptanceRate || 0,
+          customerRating: data.stats?.customerRating || 0,
+          onTimeRate: data.stats?.onTimeRate || 0,
+          totalDeliveries: data.stats?.totalDeliveries || 0
+        }
+      })
+      setProfileError("");
+      setIsLoading(false)
+    } catch (error) {
+      setProfileError('Failed to load driver statistics');
+      setIsLoading(false)
+    }
+  }
+
+  const loadAvailableOrders = async () => {
+    if (!isOnline) return
+    try {
+      const res = await authFetch('/api/driver/available-orders')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to fetch available orders')
+      }
+      const data = await res.json()
+      setAvailableOrders(data.orders || [])
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Failed to load available orders')
+    }
+  }
+
+  const toggleOnlineStatus = async () => {
+    try {
+      setIsLoading(true)
+      const newStatus = !isOnline ? 'available' : 'offline'
+      
+      const res = await authFetch('/api/driver/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        if (data.error && data.error.toLowerCase().includes('profile not found')) {
+          showToast('error', 'Please complete your driver profile before going online.')
+          window.location.href = '/driver/complete-profile'
+          return
+        }
+        throw new Error(data.error || `Failed to set status to ${newStatus}`)
+      }
+
+      const data = await res.json()
+      setIsOnline(!isOnline)
+      showToast('success', `You are now ${newStatus === 'available' ? 'online' : 'offline'}`)
+
+      // If going online, immediately load available orders
+      if (newStatus === 'available') {
+        await loadAvailableOrders()
+      } else {
+        setAvailableOrders([])
+      }
+    } catch (error) {
+        console.error('Error toggling online status:', error)
+        if (!(error instanceof Error && error.message.toLowerCase().includes('profile not found'))) {
+          showToast('error', error instanceof Error ? error.message : 'Failed to update availability status')
+        }
+      } finally {
+        setIsLoading(false)
+      }
+  }
+
+  const acceptOrder = async (orderId: string) => {
+    try {
+      const res = await authFetch(`/api/driver/orders/${orderId}/accept`, {
+        method: 'POST'
+      })
+      if (!res.ok) throw new Error('Failed to accept order')
+      showToast('success', 'Order accepted successfully')
+      loadAvailableOrders() // Refresh available orders
+      loadDriverStats() // Refresh stats
+    } catch (error) {
+      showToast('error', 'Failed to accept order')
+    }
   }
 
   return (
@@ -52,7 +161,7 @@ export default function DriverDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-teal-800 mb-2">Driver Dashboard</h1>
-          <p className="text-teal-600">Welcome back, John Driver</p>
+          <p className="text-teal-600">Welcome back</p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/driver/settings">
@@ -62,15 +171,22 @@ export default function DriverDashboard() {
             </Button>
           </Link>
           <Button
-            onClick={() => setIsOnline(!isOnline)}
+            onClick={toggleOnlineStatus}
             className={`${
               isOnline ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-600 hover:bg-gray-700 text-white"
             }`}
+            disabled={!!profileError}
           >
             {isOnline ? "Go Offline" : "Go Online"}
           </Button>
         </div>
       </div>
+
+      {profileError && (
+        <div className="mb-6 p-4 bg-red-100 text-red-700 rounded">
+          {profileError}
+        </div>
+      )}
 
       {/* Gamification Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -110,15 +226,11 @@ export default function DriverDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-teal-600 text-sm font-medium">Today's Earnings</p>
-                  <p className="text-2xl font-bold text-teal-800">$67.25</p>
+                  <p className="text-2xl font-bold text-teal-800">${todayEarnings.toFixed(2)}</p>
                 </div>
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
                   <DollarSign className="h-6 w-6 text-teal-600" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm">
-                <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-teal-600">+15% from yesterday</span>
               </div>
             </CardContent>
           </Card>
@@ -130,15 +242,11 @@ export default function DriverDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-teal-600 text-sm font-medium">Deliveries Today</p>
-                  <p className="text-2xl font-bold text-teal-800">8</p>
+                  <p className="text-2xl font-bold text-teal-800">{deliveriesCount}</p>
                 </div>
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
                   <Navigation className="h-6 w-6 text-teal-600" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm">
-                <Target className="h-4 w-4 text-teal-500 mr-1" />
-                <span className="text-teal-600">Goal: 10 deliveries</span>
               </div>
             </CardContent>
           </Card>
@@ -248,24 +356,25 @@ export default function DriverDashboard() {
                 <CardTitle className="text-teal-800">Weekly Earnings</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Monday</span>
-                    <span className="font-semibold text-teal-800">$45.25</span>
+                {isLoading ? (
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-8 bg-teal-100 rounded w-32 mb-4" />
+                    <div className="space-y-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-4 bg-teal-100 rounded w-full" />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Tuesday</span>
-                    <span className="font-semibold text-teal-800">$52.50</span>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-3xl font-bold text-teal-800">
+                      ${earnings.weekly.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-teal-600">
+                      Total earnings this week
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Wednesday</span>
-                    <span className="font-semibold text-teal-800">$38.75</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Today</span>
-                    <span className="font-semibold text-teal-800">$67.25</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -274,24 +383,35 @@ export default function DriverDashboard() {
                 <CardTitle className="text-teal-800">Performance Stats</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Acceptance Rate</span>
-                    <span className="font-semibold text-teal-800">94%</span>
+                {isLoading ? (
+                  <div className="animate-pulse space-y-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <div className="h-4 bg-teal-100 rounded w-24" />
+                        <div className="h-4 bg-teal-100 rounded w-16" />
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Customer Rating</span>
-                    <span className="font-semibold text-teal-800">4.9 ⭐</span>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-teal-700">Acceptance Rate</span>
+                      <span className="font-semibold text-teal-800">{earnings.stats.acceptanceRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-teal-700">Customer Rating</span>
+                      <span className="font-semibold text-teal-800">{earnings.stats.customerRating.toFixed(1)}/5.0</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-teal-700">On-time Rate</span>
+                      <span className="font-semibold text-teal-800">{earnings.stats.onTimeRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-teal-700">Total Deliveries</span>
+                      <span className="font-semibold text-teal-800">{earnings.stats.totalDeliveries}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">On-Time Rate</span>
-                    <span className="font-semibold text-teal-800">98%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-teal-700">Total Deliveries</span>
-                    <span className="font-semibold text-teal-800">247</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

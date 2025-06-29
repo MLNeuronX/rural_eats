@@ -17,24 +17,14 @@ export default function LoginPage() {
             <Store className="h-5 w-5" /> Vendor Login
           </Button>
         </Link>
-        <Link href="/vendor/register">
-          <Button className="w-full flex items-center justify-center gap-2" variant="ghost">
-            <Store className="h-5 w-5" /> Vendor Sign Up
-          </Button>
-        </Link>
         <Link href="/driver/login">
           <Button className="w-full flex items-center justify-center gap-2" variant="outline">
             <Truck className="h-5 w-5" /> Driver Login
           </Button>
         </Link>
-        <Link href="/driver/register">
-          <Button className="w-full flex items-center justify-center gap-2" variant="ghost">
-            <Truck className="h-5 w-5" /> Driver Sign Up
-          </Button>
-        </Link>
-        <Link href="/buyer/register">
+        <Link href="/buyer/login">
           <Button className="w-full flex items-center justify-center gap-2" variant="outline">
-            <ShoppingBag className="h-5 w-5" /> Buyer Sign Up
+            <ShoppingBag className="h-5 w-5" /> Buyer Login
           </Button>
         </Link>
       </div>

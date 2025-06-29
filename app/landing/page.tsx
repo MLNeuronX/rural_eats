@@ -5,7 +5,13 @@ import { motion, useScroll, useTransform } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { FernLogo } from "@/components/fern-logo"
 import Link from "next/link"
-import { ShoppingBag, Store, Truck, ChevronDown } from "lucide-react"
+import { ShoppingBag, Store, Truck, ChevronDown, ChevronUp } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -73,11 +79,44 @@ export default function LandingPage() {
                 Login
               </Button>
             </Link>
-            <Link href="/buyer/register">
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
               <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-black font-semibold border-0">
                 Get Started
+                  <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-black/90 backdrop-blur-md border border-white/20">
+                <DropdownMenuItem asChild>
+                  <Link href="/buyer/register" className="flex items-center space-x-3 p-3 hover:bg-amber-500/20 rounded-lg cursor-pointer">
+                    <ShoppingBag className="h-5 w-5 text-amber-400" />
+                    <div>
+                      <div className="font-semibold text-white">Order Food</div>
+                      <div className="text-sm text-white/60">Start ordering from local restaurants</div>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/vendor/register" className="flex items-center space-x-3 p-3 hover:bg-green-600/20 rounded-lg cursor-pointer">
+                    <Store className="h-5 w-5 text-green-400" />
+                    <div>
+                      <div className="font-semibold text-white">Join as Restaurant</div>
+                      <div className="text-sm text-white/60">List your restaurant and start selling</div>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/driver/register" className="flex items-center space-x-3 p-3 hover:bg-blue-500/20 rounded-lg cursor-pointer">
+                    <Truck className="h-5 w-5 text-blue-400" />
+                    <div>
+                      <div className="font-semibold text-white">Drive with Us</div>
+                      <div className="text-sm text-white/60">Start delivering and earn money</div>
+                    </div>
             </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </motion.header>
@@ -241,11 +280,6 @@ export default function LandingPage() {
               <FernLogo size="sm" className="text-white" />
             </div>
             <span className="text-xl font-bold text-white">Rural Drop</span>
-          </div>
-          <div className="mb-4">
-            <Link href="/" className="text-white/40 hover:text-white/60 transition-colors text-sm">
-              Preview Mode - Switch Roles
-            </Link>
           </div>
           <p className="text-white/60">Made with ❤️ for rural communities</p>
         </div>

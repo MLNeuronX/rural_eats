@@ -1,4 +1,4 @@
-import type React from "react"
+import * as React from "react"
 import { BuyerBottomNav } from "@/components/buyer/bottom-nav"
 import { CartProvider } from "@/components/buyer/cart-provider"
 

@@ -1,23 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { motion, AnimatePresence } from "framer-motion"
-import { Star, MapPin, Clock, Truck } from "lucide-react"
+import { Loader2, Truck, Star } from "lucide-react"
+import { showToast } from "@/components/ui/toast-provider"
+import { authFetch } from "@/lib/utils"
 
 interface Driver {
   id: string
   name: string
-  rating: number
-  distance: number
-  estimatedTime: number
-  phone: string
-  isOnline: boolean
-  completedDeliveries: number
-  profileImage: string
+  first_name?: string
+  last_name?: string
+  email: string
+  phone?: string
+  rating?: number
+  is_available: boolean
+  current_location?: string
 }
 
 interface AssignDriverDialogProps {
@@ -27,240 +29,140 @@ interface AssignDriverDialogProps {
   onDriverAssigned: (driverId: string, driverName: string) => void
 }
 
-// Mock driver data
-const availableDrivers: Driver[] = [
-  {
-    id: "d1",
-    name: "Mike Johnson",
-    rating: 4.8,
-    distance: 0.5,
-    estimatedTime: 3,
-    phone: "+1 (555) 123-4567",
-    isOnline: true,
-    completedDeliveries: 247,
-    profileImage: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "d2",
-    name: "Sarah Chen",
-    rating: 4.9,
-    distance: 1.2,
-    estimatedTime: 5,
-    phone: "+1 (555) 234-5678",
-    isOnline: true,
-    completedDeliveries: 189,
-    profileImage: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "d3",
-    name: "David Rodriguez",
-    rating: 4.7,
-    distance: 2.1,
-    estimatedTime: 8,
-    phone: "+1 (555) 345-6789",
-    isOnline: true,
-    completedDeliveries: 156,
-    profileImage: "/placeholder.svg?height=40&width=40",
-  },
-]
-
 export function AssignDriverDialog({ open, onOpenChange, orderId, onDriverAssigned }: AssignDriverDialogProps) {
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
-  const [isAssigning, setIsAssigning] = useState(false)
-  const [assignmentStep, setAssignmentStep] = useState<"select" | "confirming" | "success">("select")
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAssigning, setIsAssigning] = useState<string | null>(null)
 
-  const handleDriverSelect = (driver: Driver) => {
-    setSelectedDriver(driver)
-  }
+  useEffect(() => {
+    if (open) {
+      fetchAvailableDrivers()
+    }
+  }, [open])
 
-  const handleAssignDriver = async () => {
-    if (!selectedDriver) return
-
-    setIsAssigning(true)
-    setAssignmentStep("confirming")
-
+  const fetchAvailableDrivers = async () => {
+    setIsLoading(true)
     try {
-      // Simulate API call to notify driver
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Simulate driver acceptance (80% chance)
-      const driverAccepts = Math.random() > 0.2
-
-      if (driverAccepts) {
-        setAssignmentStep("success")
-
-        // Wait a moment to show success, then close
-        setTimeout(() => {
-          onDriverAssigned(selectedDriver.id, selectedDriver.name)
-          onOpenChange(false)
-          resetDialog()
-        }, 2000)
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/available-drivers`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setDrivers(data.drivers || []);
       } else {
-        // Driver declined
-        setAssignmentStep("select")
-        setSelectedDriver(null)
+        const error = await response.json();
+        showToast.error(error.error || 'Failed to fetch drivers');
       }
     } catch (error) {
-      setAssignmentStep("select")
+      console.error('Error fetching drivers:', error);
+      showToast.error('Failed to fetch available drivers');
     } finally {
-      setIsAssigning(false)
+      setIsLoading(false)
     }
   }
 
-  const resetDialog = () => {
-    setSelectedDriver(null)
-    setAssignmentStep("select")
-    setIsAssigning(false)
-  }
+  const handleAssignDriver = async (driver: Driver) => {
+    setIsAssigning(driver.id)
+    try {
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${orderId}/assign-driver`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ driver_id: driver.id })
+      });
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      resetDialog()
+      if (response.ok) {
+        const result = await response.json();
+        const driverName = driver.name || `${driver.first_name} ${driver.last_name}`.trim();
+        onDriverAssigned(driver.id, driverName);
+        onOpenChange(false);
+        showToast.success(`Driver ${driverName} assigned successfully!`);
+      } else {
+        const error = await response.json();
+        showToast.error(error.error || 'Failed to assign driver');
+      }
+    } catch (error) {
+      console.error('Error assigning driver:', error);
+      showToast.error('Failed to assign driver');
+    } finally {
+      setIsAssigning(null)
     }
-    onOpenChange(newOpen)
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5 text-emerald-600" />
-            Assign Driver - Order #{orderId}
+            <Truck className="h-5 w-5" />
+            Assign Driver
           </DialogTitle>
           <DialogDescription>
-            {assignmentStep === "select" && "Select an available driver for this delivery"}
-            {assignmentStep === "confirming" && "Waiting for driver confirmation..."}
-            {assignmentStep === "success" && "Driver assigned successfully!"}
+            Select a driver to assign to this order
           </DialogDescription>
         </DialogHeader>
 
-        <AnimatePresence mode="wait">
-          {assignmentStep === "select" && (
-            <motion.div
-              key="select"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-            >
-              {availableDrivers.map((driver) => (
-                <motion.div key={driver.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Card
-                    className={`cursor-pointer transition-all duration-200 ${
-                      selectedDriver?.id === driver.id ? "ring-2 ring-emerald-500 bg-emerald-50" : "hover:shadow-md"
-                    }`}
-                    onClick={() => handleDriverSelect(driver)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={driver.profileImage || "/placeholder.svg"}
-                            alt={driver.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{driver.name}</h3>
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                Online
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span>{driver.rating}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                <span>{driver.distance} mi away</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>~{driver.estimatedTime} min</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-emerald-600">
-                            ${(3.5 + driver.distance * 0.5).toFixed(2)}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Loading drivers...</span>
+            </div>
+          ) : drivers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No drivers available at the moment
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {drivers.map((driver) => (
+                <Card key={driver.id} className="cursor-pointer hover:bg-gray-50 transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback>
+                            {driver.name ? driver.name.charAt(0).toUpperCase() : 
+                             driver.first_name ? driver.first_name.charAt(0).toUpperCase() : 'D'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {driver.name || `${driver.first_name} ${driver.last_name}`.trim()}
                           </p>
-                          <p className="text-xs text-muted-foreground">{driver.completedDeliveries} deliveries</p>
+                          <p className="text-sm text-muted-foreground">{driver.email}</p>
+                          {driver.rating && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs">{driver.rating.toFixed(1)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-
-              <div className="flex gap-3 pt-4">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Available
+                        </Badge>
                 <Button
-                  onClick={handleAssignDriver}
-                  disabled={!selectedDriver || isAssigning}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {isAssigning ? "Assigning..." : "Assign Selected Driver"}
-                </Button>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
+                          size="sm"
+                          onClick={() => handleAssignDriver(driver)}
+                          disabled={isAssigning === driver.id}
+                        >
+                          {isAssigning === driver.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Assign'
+                          )}
                 </Button>
               </div>
-            </motion.div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
-
-          {assignmentStep === "confirming" && (
-            <motion.div
-              key="confirming"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center py-8"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                className="w-16 h-16 mx-auto mb-4"
-              >
-                <Truck className="w-full h-full text-emerald-600" />
-              </motion.div>
-              <h3 className="text-lg font-semibold mb-2">Contacting {selectedDriver?.name}...</h3>
-              <p className="text-muted-foreground">We're notifying the driver about this delivery request.</p>
-            </motion.div>
-          )}
-
-          {assignmentStep === "success" && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center py-8"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", duration: 0.6 }}
-                className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-emerald-600 text-2xl"
-                >
-                  ✓
-                </motion.div>
-              </motion.div>
-              <h3 className="text-lg font-semibold mb-2 text-emerald-600">Driver Assigned!</h3>
-              <p className="text-muted-foreground">
-                {selectedDriver?.name} has accepted the delivery and will arrive in ~{selectedDriver?.estimatedTime}{" "}
-                minutes.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
       </DialogContent>
     </Dialog>
   )

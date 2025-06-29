@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { updateMenuItem, type MenuItem } from "@/lib/data"
+import { updateMenuItem } from "@/lib/data"
+import type { MenuItem } from "@/lib/data"
 
 interface EditMenuItemDialogProps {
   item: MenuItem
@@ -60,33 +61,66 @@ export function EditMenuItemDialog({ item, open, onOpenChange, onItemUpdated }: 
     }
   }, [item])
 
+  const [error, setError] = useState<string | null>(null)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
-    if (!formData.name || !formData.description || !formData.price || !formData.category) {
+    // Validate required fields
+    const missingFields = [];
+    if (!formData.name || formData.name.trim() === "") missingFields.push("Name");
+    if (!formData.description || formData.description.trim() === "") missingFields.push("Description");
+    if (!formData.price || formData.price.trim() === "") missingFields.push("Price");
+    if (!formData.category || formData.category.trim() === "") missingFields.push("Category");
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(", ")}`)
       return
     }
 
+    // Validate price format and value
     const price = Number.parseFloat(formData.price)
     if (isNaN(price) || price <= 0) {
+      setError("Price must be a valid number greater than zero")
       return
     }
 
     setIsLoading(true)
 
     try {
-      const updatedItem = await updateMenuItem(item.id, {
+      console.log("Updating menu item with ID:", item.id)
+      console.log("Updated menu item data:", {
         name: formData.name,
         description: formData.description,
         price: price,
-        category: formData.category,
+        category: formData.category
+      })
+      
+      const updatedItem = await updateMenuItem(item.id, {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: price,
+        category: formData.category.trim(),
       })
 
       if (updatedItem) {
+        console.log("Menu item updated successfully:", updatedItem)
         onItemUpdated(updatedItem)
+        onOpenChange(false) // Close the dialog after successful update
       }
-    } catch (error) {
-      // Handle error
+    } catch (error: any) {
+      console.error("Error updating menu item:", error)
+      // Display a more specific error message if available
+      if (error?.message?.includes("Network error")) {
+        setError("Network error: Please check your connection and ensure the server is running.")
+      } else if (error?.message?.includes("401")) {
+        setError("Authentication error: Please log in again.")
+      } else if (error?.message?.includes("403")) {
+        setError("Authorization error: You don't have permission to update menu items.")
+      } else {
+        setError(error?.message || "Failed to update menu item. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -167,6 +201,12 @@ export function EditMenuItemDialog({ item, open, onOpenChange, onItemUpdated }: 
               {isLoading ? "Updating..." : "Update Item"}
             </Button>
           </DialogFooter>
+          
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md mt-2">
+              {error}
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

@@ -7,19 +7,65 @@ import { Badge } from "@/components/ui/badge"
 import { Store, Truck, ShoppingBag, DollarSign, Users, Activity, TrendingUp, AlertTriangle } from "lucide-react"
 import { getVendors } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
+import Link from "next/link"
+import { authFetch } from "@/lib/utils"
+
+function getTodayDateString() {
+  const today = new Date();
+  return today.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+const fetchStats = async () => {
+  try {
+    const dashboardStatsRes = await authFetch("/api/admin/dashboard-stats");
+    const dashboardStats = dashboardStatsRes.ok ? await dashboardStatsRes.json() : {};
+
+    const todayOrdersRes = await authFetch(`/api/admin/analytics/orders?date=${getTodayDateString()}`);
+    const todayOrdersData = todayOrdersRes.ok ? await todayOrdersRes.json() : {};
+
+    return {
+      totalUsers: dashboardStats.total_users || 0,
+      totalVendors: dashboardStats.users_by_role?.vendors ?? 0,
+      activeVendors: dashboardStats.active_vendors || 0,
+      totalDrivers: dashboardStats.users_by_role?.drivers ?? 0,
+      activeDrivers: dashboardStats.active_drivers || 0,
+      totalOrders: dashboardStats.total_orders || 0,
+      todayOrders: todayOrdersData.total_orders || 0,
+      totalRevenue: todayOrdersData.total_revenue || 0,
+      todayRevenue: todayOrdersData.total_revenue || 0,
+      users_by_role: dashboardStats.users_by_role || { admins: 0, vendors: 0, drivers: 0, buyers: 0 },
+    };
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return {
+      totalUsers: 0,
+      totalVendors: 0,
+      activeVendors: 0,
+      totalDrivers: 0,
+      activeDrivers: 0,
+      totalOrders: 0,
+      todayOrders: 0,
+      totalRevenue: 0,
+      todayRevenue: 0,
+      users_by_role: { admins: 0, vendors: 0, drivers: 0, buyers: 0 },
+    };
+  }
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState({
+    totalUsers: 0,
     totalVendors: 0,
     activeVendors: 0,
-    totalDrivers: 12,
-    activeDrivers: 8,
-    totalOrders: 1250,
-    todayOrders: 45,
-    totalRevenue: 125000,
-    todayRevenue: 3200,
+    totalDrivers: 0,
+    activeDrivers: 0,
+    totalOrders: 0,
+    todayOrders: 0,
+    totalRevenue: 0,
+    todayRevenue: 0,
+    users_by_role: { admins: 0, vendors: 0, drivers: 0, buyers: 0 },
   })
 
   useEffect(() => {
@@ -27,22 +73,12 @@ export default function AdminDashboard() {
 
     const loadDashboardData = async () => {
       try {
-        const vendors = await getVendors()
-        const activeVendors = vendors.filter((v) => v.isOpen).length
-
-        if (mounted) {
-          setStats((prev) => ({
-            ...prev,
-            totalVendors: vendors.length,
-            activeVendors,
-          }))
-        }
+        const realStats = await fetchStats()
+        if (mounted) setStats(realStats)
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
       } finally {
-        if (mounted) {
-          setIsLoading(false)
-        }
+        if (mounted) setIsLoading(false)
       }
     }
 
@@ -56,45 +92,59 @@ export default function AdminDashboard() {
   const dashboardStats = [
     {
       title: "Total Users",
-      value: "1,234",
+      value: (stats.totalUsers ?? 0).toString(),
       icon: Users,
-      change: "+12% from last month",
+      change: "",
       color: "from-slate-500 to-gray-500",
+      href: "/admin/users",
     },
     {
       title: "Active Vendors",
-      value: stats.totalVendors.toString(),
+      value: (stats.activeVendors ?? 0).toString(),
       icon: Store,
-      change: `${stats.activeVendors} currently open`,
+      change: `${stats.activeVendors ?? 0} currently open`,
       color: "from-indigo-500 to-blue-500",
+      href: "/admin/vendors?status=open",
     },
     {
       title: "Active Drivers",
-      value: stats.activeDrivers.toString(),
+      value: (stats.activeDrivers ?? 0).toString(),
       icon: Truck,
-      change: `of ${stats.totalDrivers} total drivers`,
+      change: `of ${(stats.totalDrivers ?? 0).toString()} total drivers`,
       color: "from-purple-500 to-indigo-500",
+      href: "/admin/drivers?status=active",
+    },
+    {
+      title: "Admins",
+      value: (stats.users_by_role?.admins ?? 0).toString(),
+      icon: Users,
+      change: "",
+      color: "from-purple-600 to-purple-800",
+      href: "/admin/users?role=admin",
     },
     {
       title: "Today's Orders",
-      value: stats.todayOrders.toString(),
+      value: (stats.todayOrders ?? 0).toString(),
       icon: ShoppingBag,
-      change: `${stats.totalOrders} total orders`,
+      change: `${stats.totalOrders ?? 0} total orders`,
       color: "from-blue-500 to-cyan-500",
+      href: "/admin/orders?date=today",
     },
     {
       title: "Today's Revenue",
-      value: `$${stats.todayRevenue.toLocaleString()}`,
+      value: `$${(stats.todayRevenue ?? 0).toLocaleString()}`,
       icon: DollarSign,
-      change: `$${stats.totalRevenue.toLocaleString()} total revenue`,
+      change: `$${(stats.totalRevenue ?? 0).toLocaleString()} total revenue`,
       color: "from-green-500 to-emerald-500",
+      href: "/admin/orders?date=today",
     },
     {
       title: "Growth Rate",
-      value: "15.3%",
+      value: "-",
       icon: TrendingUp,
-      change: "+2.1% from last month",
+      change: "Loading...",
       color: "from-emerald-500 to-teal-500",
+      href: "/admin/analytics",
     },
   ]
 
@@ -168,7 +218,8 @@ export default function AdminDashboard() {
               transition={{ duration: 0.4, delay: index * 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
             >
-              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <Link href={stat.href} className="block focus:outline-none">
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 cursor-pointer">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
                   <div
@@ -182,6 +233,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-gray-500">{stat.change}</p>
                 </CardContent>
               </Card>
+              </Link>
             </motion.div>
           ))}
         </div>
@@ -202,41 +254,11 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    {
-                      icon: Store,
-                      message: "New vendor registered: Tony's Pizza",
-                      time: "2 hours ago",
-                      color: "text-green-500",
-                    },
-                    {
-                      icon: Truck,
-                      message: "Driver completed 50 deliveries milestone",
-                      time: "4 hours ago",
-                      color: "text-blue-500",
-                    },
-                    {
-                      icon: Activity,
-                      message: "System maintenance completed",
-                      time: "1 day ago",
-                      color: "text-indigo-500",
-                    },
-                  ].map((activity, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.7 + index * 0.1 }}
-                      whileHover={{ x: 5 }}
-                      className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
-                    >
-                      <activity.icon className={`h-4 w-4 mt-0.5 ${activity.color}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800">{activity.message}</p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
+                  {/* TODO: Replace with real system activity data from API */}
+                  <div className="text-center text-gray-500 py-8">
+                    <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No recent activity</p>
                       </div>
-                    </motion.div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -257,37 +279,11 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { label: "Server Uptime", value: "99.9%", status: "operational" },
-                    { label: "Response Time", value: "245ms", status: "good" },
-                    { label: "Active Sessions", value: "1,847", status: "normal" },
-                    { label: "System Status", value: "Operational", status: "operational" },
-                  ].map((metric, index) => (
-                    <motion.div
-                      key={metric.label}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.9 + index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
-                    >
-                      <span className="text-sm text-gray-600">{metric.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800">{metric.value}</span>
-                        <Badge
-                          variant="outline"
-                          className={
-                            metric.status === "operational"
-                              ? "text-green-600 border-green-200"
-                              : metric.status === "good"
-                                ? "text-blue-600 border-blue-200"
-                                : "text-gray-600 border-gray-200"
-                          }
-                        >
-                          {metric.status === "operational" ? "✓" : metric.status === "good" ? "◐" : "○"}
-                        </Badge>
+                  {/* TODO: Replace with real system health metrics from API */}
+                  <div className="text-center text-gray-500 py-8">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">System health data loading...</p>
                       </div>
-                    </motion.div>
-                  ))}
                 </div>
               </CardContent>
             </Card>

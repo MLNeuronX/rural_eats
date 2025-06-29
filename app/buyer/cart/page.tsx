@@ -62,6 +62,12 @@ export default function CartPage() {
         deliveryTime: deliveryTime,
       })
 
+      // Check if order creation was successful
+      if (!order) {
+        console.error("Failed to create order")
+        return
+      }
+
       // Clear cart
       clearCart()
 

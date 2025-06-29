@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, MapPin, Navigation, MessageCircle, Truck, CheckCircle, Clock, Phone } from "lucide-react"
+import { ArrowLeft, MapPin, Navigation, MessageCircle, Truck, CheckCircle, Clock, Phone, Bell } from "lucide-react"
 import { getOrderById, updateOrderStatus, type Order, driverAcceptAssignment } from "@/lib/data"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { orderToasts, showToast } from "@/components/ui/toast-provider"
 import { useOrderUpdates } from "@/hooks/use-realtime"
+import { realtimeService, sendDriverAcceptedNotification } from "@/lib/realtime"
+import { useAuth } from "@/components/auth-provider"
 
 function OrderStatusBadge({ status }: { status: Order["status"] }) {
   const statusMap: Record<Order["status"], { label: string; className: string }> = {
@@ -35,22 +37,52 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isAccepting, setIsAccepting] = useState(false)
+  const { user } = useAuth()
 
   // Real-time order updates
-  const { order: realtimeOrder, isLoading: realtimeLoading } = useOrderUpdates(params.id, true)
+  const { order: realtimeOrder, isLoading: realtimeLoading } = useOrderUpdates(params.id)
 
+  // Update local order when realtime order changes
   useEffect(() => {
     if (realtimeOrder) {
       setOrder(realtimeOrder)
     }
   }, [realtimeOrder])
 
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    const unsubscribeReadyForPickup = realtimeService.subscribe('ready_for_pickup', (notification) => {
+      if (notification.orderId === params.id) {
+        showToast('warning', 'Order is ready for pickup!')
+          duration: 10000,
+          action: {
+            label: 'View Order',
+            onClick: () => {
+              // Order details are already loaded
+            }
+          }
+        })
+      }
+    })
+
+    const unsubscribeOrderAccepted = realtimeService.subscribe('order_accepted', (notification) => {
+      if (notification.orderId === params.id) {
+        showToast('info', 'Vendor has accepted the order and is preparing it')
+      }
+    })
+
+    return () => {
+      unsubscribeReadyForPickup()
+      unsubscribeOrderAccepted()
+    }
+  }, [params.id])
+
   useEffect(() => {
     getOrderById(params.id).then((order) => {
       setOrder(order)
       setIsLoading(false)
     }).catch((error) => {
-      showToast.error("Failed to load order details")
+      showToast('error', "Failed to load order details")
       setIsLoading(false)
     })
   }, [params.id])
@@ -60,7 +92,7 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
 
     setIsUpdating(true)
     try {
-      const updatedOrder = await updateOrderStatus(order.id, newStatus, "d1")
+      const updatedOrder = await updateOrderStatus(order.id, newStatus)
       if (updatedOrder) {
         setOrder(updatedOrder)
         orderToasts.statusUpdated(newStatus)
@@ -70,7 +102,7 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
         }
       }
     } catch (error) {
-      showToast.error("Failed to update order status")
+      showToast('error', "Failed to update order status")
     } finally {
       setIsUpdating(false)
     }
@@ -81,10 +113,17 @@ export default function DriverOrderDetailsPage({ params }: { params: { id: strin
     setIsAccepting(true)
     try {
       await driverAcceptAssignment(order.id)
-      showToast.success("Delivery assignment accepted!")
-      // Optionally refetch order or update state
+      
+      // Send real-time notification
+      sendDriverAcceptedNotification(order.id, 'Driver')
+      
+      showToast('success', "Delivery assignment accepted!")
+      
+      // Update local state to reflect the change
+      setOrder(prev => prev ? { ...prev, status: 'DRIVER_ACCEPTED' as any } : null)
+      
     } catch (error) {
-      showToast.error("Failed to accept delivery assignment")
+      showToast('error', "Failed to accept delivery assignment")
     } finally {
       setIsAccepting(false)
     }

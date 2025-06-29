@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Search, Plus, Edit, Eye, MapPin, Star } from "lucide-react"
-import { getVendors, updateVendorAvailability, type Vendor } from "@/lib/data"
+import { getAdminVendors, updateVendorAvailability, type Vendor } from "@/lib/data"
+import AddVendorDialog from "@/components/admin/add-vendor-dialog"
+import { authFetch } from "@/lib/utils"
+import { showToast } from "@/components/ui/toast-provider"
 
 function VendorCard({
   vendor,
@@ -64,9 +67,7 @@ function VendorCard({
           </div>
           <div>
             <span className="text-muted-foreground">Price Range: </span>
-            <span className="font-medium">
-              {vendor.priceRange === "low" ? "$" : vendor.priceRange === "medium" ? "$$" : "$$$"}
-            </span>
+            <span className="font-medium">{vendor.priceRange}</span>
           </div>
           <div>
             <span className="text-muted-foreground">Hours: </span>
@@ -93,10 +94,12 @@ function VendorCard({
                 View
               </Button>
             </Link>
+            <Link href={`/admin/vendors/${vendor.id}?edit=1`}>
             <Button variant="outline" size="sm">
               <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
+            </Link>
           </div>
         </div>
       </CardContent>
@@ -110,6 +113,7 @@ export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all")
   const [isLoading, setIsLoading] = useState(true)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
 
   useEffect(() => {
     loadVendors()
@@ -120,9 +124,16 @@ export default function VendorsPage() {
   }, [vendors, searchTerm, statusFilter])
 
   const loadVendors = async () => {
+    setIsLoading(true)
     try {
-      const vendorsData = await getVendors()
+      console.log('Loading vendors...')
+      const vendorsData = await getAdminVendors()
+      console.log('Loaded vendors:', vendorsData)
       setVendors(vendorsData)
+      console.log('Updated vendors list:', vendorsData)
+    } catch (error) {
+      console.error('Error loading vendors:', error)
+      showToast.error('Failed to load vendors')
     } finally {
       setIsLoading(false)
     }
@@ -154,8 +165,60 @@ export default function VendorsPage() {
       const updatedVendor = await updateVendorAvailability(vendor.id, !vendor.isOpen);
       if (updatedVendor) {
         setVendors(vendors.map((v) => (v.id === vendor.id ? updatedVendor : v)));
+        showToast.success(`Vendor is now ${updatedVendor.isOpen ? 'Open' : 'Closed'}`);
       }
-    } catch (e) {}
+    } catch (e) {
+      showToast.error('Failed to update vendor status');
+    }
+  };
+
+  const handleAddVendor = async (vendor: { business_name: string; address: string; phone: string; cuisine_type: string; price_range: string; opening_time: string; closing_time: string; delivery_fee: string; email: string; password: string; }) => {
+    const res = await authFetch("/api/admin/vendors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(vendor),
+    });
+    
+    let data: any = {};
+    try {
+      data = await res.json();
+    } catch (e) {
+      console.error("Failed to parse response:", e);
+    }
+    
+    if (!res.ok) {
+      // Handle different error response formats
+      let errorMessage = "Failed to add vendor";
+      if (data.error) {
+        errorMessage = data.error;
+      } else if (data.message) {
+        errorMessage = data.message;
+      } else if (data.detail) {
+        errorMessage = data.detail;
+      } else if (res.status === 422) {
+        errorMessage = "Validation error: Please check your input data";
+      } else if (res.status === 409) {
+        errorMessage = "Vendor with this email already exists";
+      } else if (res.status === 400) {
+        errorMessage = "Invalid request data";
+      }
+      
+      showToast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+    
+    // Check for expected success response structure
+    if (!data.vendor || !data.vendor.id) {
+      const errorMessage = "Invalid response from server";
+      showToast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+    
+    console.log("Vendor added successfully, refreshing list...");
+    await loadVendors();
+    showToast.success(`Vendor ${vendor.business_name} was added successfully.`);
+    return { id: data.vendor.id };
   };
 
   if (isLoading) {
@@ -186,11 +249,12 @@ export default function VendorsPage() {
           <h1 className="text-3xl font-bold">Vendors</h1>
           <p className="text-muted-foreground">Manage restaurant partners</p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Vendor
         </Button>
       </div>
+      <AddVendorDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onAddVendor={handleAddVendor} />
 
       {/* Filters */}
       <div className="flex gap-4">

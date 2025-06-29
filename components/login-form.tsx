@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Loader2, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
+import { showToast } from "@/components/ui/toast-provider"
 
 interface LoginFormProps {
   role: "buyer" | "vendor" | "driver" | "admin"
@@ -25,8 +26,8 @@ interface ApplicationStatus {
 }
 
 export function LoginForm({ role, title }: LoginFormProps) {
-  const [email, setEmail] = useState(`${role}@example.com`)
-  const [password, setPassword] = useState("password")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
   const { login } = useAuth()
@@ -41,14 +42,48 @@ export function LoginForm({ role, title }: LoginFormProps) {
       const result = await login(email, password, role)
 
       if (result.success) {
-        router.push(`/${role}`)
+        if (role === "admin") {
+          showToast('success', "Login successful! Welcome, Admin.")
+        }
+        if (role === "driver") {
+          showToast('success', "Login successful! Welcome, Driver.")
+        }
+        if (role === "buyer") {
+          showToast('success', "Login successful! Welcome, Buyer.")
+        }
+        if (role === "vendor") {
+          showToast('success', "Login successful! Welcome, Vendor.")
+        }
+        const redirectUrl = {
+          admin: "/admin",
+          vendor: "/vendor",
+          driver: "/driver",
+          buyer: "/buyer",
+        }[role]
+        router.push(redirectUrl)
       } else if (result.login_status === 'application_pending') {
         setApplicationStatus(result.application);
       } else {
-        // No toast notification needed as per the instructions
+        if (role === "admin") {
+          showToast('error', result.error || "Invalid credentials. Please try again.")
+        }
+        if (role === "driver" || role === "buyer") {
+          showToast('error', result.error || "Invalid credentials. Please try again.")
+        }
+        if (role === "vendor") {
+          showToast('error', result.error || "Invalid credentials. Please try again.")
+        }
       }
     } catch (error: any) {
-      // No toast notification needed as per the instructions
+      if (role === "admin") {
+        showToast('error', "An error occurred. Please try again.")
+      }
+      if (role === "driver" || role === "buyer") {
+        showToast('error', "An error occurred. Please try again.")
+      }
+      if (role === "vendor") {
+        showToast('error', "An error occurred. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }

@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Clock, MapPin, MessageCircle, CheckCircle, ChefHat, Package, Truck } from "lucide-react"
+import { ArrowLeft, Clock, MapPin, MessageCircle, CheckCircle, ChefHat, Package, Truck, Printer } from "lucide-react"
 import { getOrderById, updateOrderStatus, type Order, vendorAcceptOrder } from "@/lib/data"
 import { AssignDriverDialog } from "@/components/vendor/assign-driver-dialog"
 import { AutoAssignButton } from "@/components/vendor/auto-assign-button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { orderToasts, showToast } from "@/components/ui/toast-provider"
 import { useOrderUpdates } from "@/hooks/use-realtime"
+import { realtimeService, sendDriverAssignedNotification, sendDriverAcceptedNotification, sendOrderAcceptedNotification, sendReadyForPickupNotification } from "@/lib/realtime"
+import { printKitchenOrder } from "@/lib/kitchen-printer"
+import { authFetch } from "@/lib/utils"
 
 function OrderStatusBadge({ status }: { status: Order["status"] }) {
   const statusMap: Record<Order["status"], { label: string; className: string }> = {
@@ -27,22 +30,57 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
   }
-  const { label, className } = statusMap[status]
-  return <Badge className={className}>{label}</Badge>
+  const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" }
+  return <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
 }
 
-// Placeholder implementations for print and notifications
-function printKitchenTicket(order: Order) {
-  // TODO: Integrate with actual kitchen printer
-  console.log('Printing kitchen ticket for order', order.id);
+// Real kitchen printer integration
+async function printKitchenTicket(order: Order) {
+  try {
+    // Use the real kitchen printer service
+    const success = await printKitchenOrder({
+      id: order.id,
+      items: order.items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      total: order.total,
+      createdAt: order.createdAt,
+      deliveryAddress: order.deliveryAddress,
+      customerName: 'Customer', // Use default since customerName doesn't exist in Order
+      vendorName: 'Restaurant', // This would come from vendor data
+      customerPhone: undefined, // This property doesn't exist in Order
+      specialInstructions: undefined, // This property doesn't exist in Order
+      vendorAddress: 'Restaurant Address'
+    })
+    
+    if (success) {
+      showToast('success', 'Kitchen ticket printed successfully!')
+    } else {
+      showToast('error', 'Failed to print kitchen ticket')
+    }
+    
+    return success
+  } catch (error) {
+    console.error('Kitchen printer error:', error)
+    showToast('error', 'Failed to print kitchen ticket')
+    return false
+  }
 }
-function notifyCustomer(message: string) {
-  // TODO: Integrate with actual notification system
-  console.log('Notify customer:', message);
+
+// Real-time customer notification
+function notifyCustomer(message: string, orderId: string) {
+  // Send real-time notification to customer
+  sendOrderAcceptedNotification(orderId)
+  console.log('Customer notification sent:', message)
 }
-function notifyDriver(message: string) {
-  // TODO: Integrate with actual notification system
-  console.log('Notify driver:', message);
+
+// Real-time driver notification
+function notifyDriver(message: string, orderId: string) {
+  // Send real-time notification to driver
+  sendReadyForPickupNotification(orderId, 'Vendor')
+  console.log('Driver notification sent:', message)
 }
 
 export default function VendorOrderDetailsPage({ params }: { params: { id: string } }) {
@@ -55,6 +93,35 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
   // Real-time order updates
   const { order: realtimeOrder, isLoading: realtimeLoading } = useOrderUpdates(params.id, true)
 
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    const unsubscribeDriverAssigned = realtimeService.subscribe('driver_assigned', (notification) => {
+      if (notification.orderId === params.id) {
+        showToast('success', `Driver ${notification.data?.driverName} assigned to order!`)
+      }
+    })
+
+    const unsubscribeDriverAccepted = realtimeService.subscribe('driver_accepted', (notification) => {
+      if (notification.orderId === params.id) {
+        showToast('success', `Driver ${notification.data?.driverName} accepted delivery!`)
+        // Enable the "Accept Order & Print" button
+        setOrder(prev => prev ? { ...prev, status: 'DRIVER_ACCEPTED' as any } : null)
+      }
+    })
+
+    const unsubscribeOrderAccepted = realtimeService.subscribe('order_accepted', (notification) => {
+      if (notification.orderId === params.id) {
+        showToast('success', 'Order accepted and kitchen notified!')
+      }
+    })
+
+    return () => {
+      unsubscribeDriverAssigned()
+      unsubscribeDriverAccepted()
+      unsubscribeOrderAccepted()
+    }
+  }, [params.id])
+
   useEffect(() => {
     if (realtimeOrder) {
       setOrder(realtimeOrder)
@@ -66,7 +133,7 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
       setOrder(order)
       setIsLoading(false)
     }).catch((error) => {
-      showToast.error("Failed to load order details")
+      showToast('error', "Failed to load order details")
       setIsLoading(false)
     })
   }, [params.id])
@@ -76,47 +143,113 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
 
     setIsUpdating(true);
     try {
-      const updatedOrder = await updateOrderStatus(order.id, newStatus);
-      if (updatedOrder) {
-        setOrder(updatedOrder);
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local order state
+        setOrder(prev => prev ? { ...prev, status: newStatus } : null);
+        
+        // Send real-time notifications based on status
+        if (newStatus === 'PREPARING') {
+          notifyCustomer("Your food is being prepared!", order.id);
+        } else if (newStatus === 'READY') {
+          notifyDriver("Order is ready for pickup!", order.id);
+        }
+        
         orderToasts.statusUpdated(newStatus);
+      } else {
+        const error = await response.json();
+        showToast('error', error.error || "Failed to update order status");
       }
     } catch (error) {
-      showToast.error("Failed to update order status");
+      showToast('error', "Failed to update order status");
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleDriverAssigned = async (driverId: string, driverName: string) => {
+  const handleAssignDriver = async (driverId: string, driverName: string) => {
     if (!order) return;
     
     try {
-      const updatedOrder = await updateOrderStatus(order.id, "ASSIGNED", driverId);
-      if (updatedOrder) {
-        setOrder(updatedOrder);
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/assign-driver`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ driver_id: driverId })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local order state
+        setOrder(prev => prev ? { 
+          ...prev, 
+          driverId: driverId,
+          status: 'DRIVER_ASSIGNED' as any,
+          driver_assigned: true
+        } : null)
+        
         orderToasts.driverAssigned(driverName);
+        
+        // Send real-time notification to driver
+        sendDriverAssignedNotification(order.id, driverId, driverName);
+      } else {
+        const error = await response.json();
+        showToast('error', error.error || "Failed to assign driver");
       }
     } catch (error) {
-      showToast.error("Failed to assign driver");
+      showToast('error', "Failed to assign driver");
     }
   };
 
   const handleAcceptOrder = async () => {
     if (!order || !order.driverId) {
-      alert("Assign a driver before accepting the order.");
+      showToast('error', "Assign a driver before accepting the order.");
       return;
     }
     setIsAccepting(true)
     try {
-      await vendorAcceptOrder(order.id)
-      printKitchenTicket(order)
-      notifyCustomer("Your food is being prepared!")
-      notifyDriver("Pickup ready at vendor.")
-      showToast.success("Order accepted and sent to kitchen!")
-      // Optionally refetch order or update state
+      // Call the real backend endpoint
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/orders/${order.id}/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Print kitchen ticket
+        await printKitchenTicket(order)
+        
+        // Send real-time notifications
+        notifyCustomer("Your food is being prepared!", order.id)
+        notifyDriver("Pickup ready at vendor.", order.id)
+        
+        // Update local order state
+        setOrder(prev => prev ? { ...prev, status: 'ACCEPTED' as any } : null)
+        
+        showToast('success', "Order accepted and sent to kitchen!")
+      } else {
+        const error = await response.json();
+        showToast('error', error.error || "Failed to accept order")
+      }
     } catch (error) {
-      showToast.error("Failed to accept order")
+      showToast('error', "Failed to accept order")
     } finally {
       setIsAccepting(false)
     }
@@ -181,7 +314,9 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
     )
   }
 
-  const nextAction = getNextAction(order.status)
+  // Normalize status: treat 'pending' as 'NEW'
+  const normalizedStatus = (order.status === 'pending' ? 'NEW' : order.status) as Order["status"];
+  const nextAction = getNextAction(normalizedStatus);
 
   return (
     <div className="container max-w-4xl mx-auto px-4 py-6">
@@ -195,11 +330,11 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Order #{order.id.slice(0, 8)}</h1>
+            <h1 className="text-2xl font-bold">Order #{typeof order.id === 'string' ? order.id.slice(0, 8) : ''}</h1>
             <p className="text-muted-foreground">Order Details</p>
           </div>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <OrderStatusBadge status={normalizedStatus} />
       </div>
 
       {/* Action Buttons */}
@@ -268,13 +403,13 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                 </div>
-                <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="font-medium">${typeof item.price === 'number' && typeof item.quantity === 'number' ? (item.price * item.quantity).toFixed(2) : '0.00'}</p>
               </div>
             ))}
             <Separator />
             <div className="flex justify-between items-center font-bold">
               <span>Total</span>
-              <span>${order.total.toFixed(2)}</span>
+              <span>${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</span>
             </div>
           </div>
         </CardContent>
@@ -322,22 +457,22 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
+              <span>${typeof order.total === 'number' && typeof order.deliveryFee === 'number' ? (order.total - order.deliveryFee).toFixed(2) : '0.00'}</span>
             </div>
             <div className="flex justify-between">
               <span>Delivery Fee</span>
-              <span>${order.deliveryFee.toFixed(2)}</span>
+              <span>${typeof order.deliveryFee === 'number' ? order.deliveryFee.toFixed(2) : '0.00'}</span>
             </div>
             {order.tip && (
               <div className="flex justify-between">
                 <span>Tip</span>
-                <span>${order.tip.toFixed(2)}</span>
+                <span>${typeof order.tip === 'number' ? order.tip.toFixed(2) : '0.00'}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between font-bold">
               <span>Total</span>
-              <span>${order.total.toFixed(2)}</span>
+              <span>${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</span>
             </div>
           </CardContent>
         </Card>
@@ -347,8 +482,8 @@ export default function VendorOrderDetailsPage({ params }: { params: { id: strin
       <AssignDriverDialog
         open={assignDriverDialog}
         onOpenChange={setAssignDriverDialog}
-        orderId={order.id}
-        onDriverAssigned={handleDriverAssigned}
+        orderId={typeof order.id === 'string' ? order.id : ''}
+        onDriverAssigned={handleAssignDriver}
       />
     </div>
   )

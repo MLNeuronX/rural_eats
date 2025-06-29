@@ -14,52 +14,14 @@ export default function BuyerSettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const [personalInfo, setPersonalInfo] = useState({
-    name: "John Buyer",
-    email: "john.buyer@example.com",
-    phone: "(555) 123-4567",
+    name: "",
+    email: "",
+    phone: "",
   })
 
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      label: "Home",
-      address: "123 Main St",
-      city: "Rural Town",
-      state: "ST",
-      zipCode: "12345",
-      isDefault: true,
-    },
-    {
-      id: 2,
-      label: "Work",
-      address: "456 Business Ave",
-      city: "Rural Town",
-      state: "ST",
-      zipCode: "12345",
-      isDefault: false,
-    },
-  ])
+  const [addresses, setAddresses] = useState([])
 
-  const [paymentMethods, setPaymentMethods] = useState([
-    {
-      id: 1,
-      type: "card",
-      last4: "4242",
-      brand: "Visa",
-      expiryMonth: 12,
-      expiryYear: 2025,
-      isDefault: true,
-    },
-    {
-      id: 2,
-      type: "card",
-      last4: "5555",
-      brand: "Mastercard",
-      expiryMonth: 8,
-      expiryYear: 2024,
-      isDefault: false,
-    },
-  ])
+  const [paymentMethods, setPaymentMethods] = useState([])
 
   const [notifications, setNotifications] = useState({
     orderUpdates: true,

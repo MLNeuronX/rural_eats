@@ -125,6 +125,36 @@ function MenuItemsSkeleton() {
   )
 }
 
+async function VendorInfo({ id }: { id: string }) {
+  const vendor = await getVendorById(id)
+
+  if (!vendor) {
+    return <div className="p-4 text-sm text-muted-foreground">Vendor information not available</div>
+  }
+
+  return (
+    <div className="p-4 text-sm space-y-4">
+      <p>
+        <strong>Address:</strong> {vendor.address || "Address not available"}
+      </p>
+      <p>
+        <strong>Phone:</strong> {vendor.phone || "(555) 123-4567"}
+      </p>
+      <p>
+        <strong>Hours:</strong>
+        <br />
+        {vendor.openingTime} - {vendor.closingTime}
+      </p>
+      <p>
+        <strong>Delivery Fee:</strong> ${vendor.deliveryFee?.toFixed(2) || "3.99"}
+      </p>
+      <p>
+        <strong>Minimum Order:</strong> $10.00
+      </p>
+    </div>
+  )
+}
+
 export default function VendorPage({ params }: { params: { id: string } }) {
   return (
     <div className="pb-6">
@@ -159,27 +189,9 @@ export default function VendorPage({ params }: { params: { id: string } }) {
             </Suspense>
           </TabsContent>
           <TabsContent value="info">
-            <div className="p-4 text-sm space-y-4">
-              <p>
-                <strong>Address:</strong> 123 Main St, Rural Town
-              </p>
-              <p>
-                <strong>Phone:</strong> (555) 123-4567
-              </p>
-              <p>
-                <strong>Hours:</strong>
-                <br />
-                Monday - Friday: 10:00 AM - 9:00 PM
-                <br />
-                Saturday - Sunday: 11:00 AM - 10:00 PM
-              </p>
-              <p>
-                <strong>Delivery Fee:</strong> $3.99
-              </p>
-              <p>
-                <strong>Minimum Order:</strong> $10.00
-              </p>
-            </div>
+            <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading vendor info...</div>}>
+              <VendorInfo id={params.id} />
+            </Suspense>
           </TabsContent>
           <TabsContent value="reviews">
             <div className="p-4 text-center text-muted-foreground">Reviews coming soon</div>

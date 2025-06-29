@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { showToast } from "@/components/ui/toast-provider"
 
 interface RegisterFormProps {
   role: "buyer" | "vendor" | "driver"
@@ -51,7 +52,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
 
     setIsLoading(true)
 
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com/api";
+    const baseApiUrl = "http://127.0.0.1:5000/api";
 
     try {
       let requestData;
@@ -109,6 +110,12 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
         } else {
            // For buyer and driver, we might want to log them in directly
            // For now, just show a success message and redirect
+          if (role === "driver") {
+            showToast('success', "Signup successful! Welcome, Driver.")
+          }
+          if (role === "buyer") {
+            showToast('success', "Signup successful! Welcome, Buyer.")
+          }
           router.push("/login");
         }
       } else {
@@ -121,10 +128,16 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
           errorData = { error: errorText };
         }
         console.log("Error response parsed:", errorData);
+        if (role === "driver" || role === "buyer") {
+          showToast('error', errorData.error || `HTTP ${response.status}: An unknown error occurred`)
+        }
         throw new Error(errorData.error || `HTTP ${response.status}: An unknown error occurred`);
       }
     } catch (error) {
       console.error('Registration error:', error)
+      if (role === "driver" || role === "buyer") {
+        showToast('error', "An error occurred. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -263,27 +276,24 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
 
           <div className="flex items-center space-x-2">
             <Checkbox
-              id="terms"
+              id="agreeToTerms"
               checked={formData.agreeToTerms}
-              onCheckedChange={(checked) => updateField("agreeToTerms", checked as boolean)}
+              onCheckedChange={(checked) => updateField("agreeToTerms", !!checked)}
             />
-            <Label htmlFor="terms" className="text-sm">
-              I agree to the{" "}
-              <Link href="/terms" className="text-primary hover:underline">
-                Terms and Conditions
-              </Link>
+            <Label htmlFor="agreeToTerms" className="text-sm">
+              I agree to the Terms of Service and Privacy Policy
             </Label>
           </div>
 
           {role === "driver" && (
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="background"
+                id="agreeToBackground"
                 checked={formData.agreeToBackground}
-                onCheckedChange={(checked) => updateField("agreeToBackground", checked as boolean)}
+                onCheckedChange={(checked) => updateField("agreeToBackground", !!checked)}
               />
-              <Label htmlFor="background" className="text-sm">
-                I consent to background check and vehicle verification
+              <Label htmlFor="agreeToBackground" className="text-sm">
+                I consent to a background check
               </Label>
             </div>
           )}

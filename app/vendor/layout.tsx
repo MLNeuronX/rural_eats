@@ -1,4 +1,4 @@
-import type React from "react"
+import * as React from "react"
 import { VendorHeader } from "@/components/vendor/vendor-header"
 
 // Simplify the vendor layout to remove authentication restrictions

@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Filter, Download, Eye, Clock, DollarSign, TrendingUp, Package } from "lucide-react"
+import { Search, Filter, Download, Eye, Clock, DollarSign, TrendingUp, Package, Plus } from "lucide-react"
 import { getOrdersByVendor, type Order } from "@/lib/data"
+import { showToast } from "@/components/ui/toast-provider"
+import { authFetch } from "@/lib/utils"
 
 function OrderStatusBadge({ status }: { status: Order["status"] }) {
   const statusMap: Record<Order["status"], { label: string; className: string }> = {
@@ -15,6 +17,9 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     CONFIRMED: { label: "Confirmed", className: "bg-green-100 text-green-800" },
     PREPARING: { label: "Preparing", className: "bg-yellow-100 text-yellow-800" },
     READY: { label: "Ready", className: "bg-purple-100 text-purple-800" },
+    DRIVER_ASSIGNED: { label: "Driver Assigned", className: "bg-indigo-100 text-indigo-800" },
+    DRIVER_ACCEPTED: { label: "Driver Accepted", className: "bg-indigo-100 text-indigo-800" },
+    ACCEPTED: { label: "Accepted", className: "bg-green-100 text-green-800" },
     ASSIGNED: { label: "Assigned", className: "bg-indigo-100 text-indigo-800" },
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
@@ -74,14 +79,14 @@ function OrderCard({ order }: { order: Order }) {
 
         <div className="text-xs text-muted-foreground mb-3">
           <p>
-            <strong>Customer:</strong> Buyer #{order.buyerId}
+            <strong>Customer:</strong> {order.buyer?.name || `Buyer #${order.buyerId}`}
           </p>
           <p>
-            <strong>Vendor:</strong> Vendor #{order.vendorId}
+            <strong>Vendor:</strong> {order.vendor?.business_name || `Vendor #${order.vendorId}`}
           </p>
           {order.driverId && (
             <p>
-              <strong>Driver:</strong> Driver #{order.driverId}
+              <strong>Driver:</strong> {order.driver?.name || `Driver #${order.driverId}`}
             </p>
           )}
           <p>
@@ -111,14 +116,13 @@ function OrdersList({ status }: { status?: Order["status"] }) {
 
   const loadOrders = async () => {
     try {
-      // Mock loading all orders from different vendors
-      const allOrders: Order[] = []
-      const vendorIds = ["v1", "v2", "v3"] // Sample vendor IDs
-
-      for (const vendorId of vendorIds) {
-        const vendorOrders = await getOrdersByVendor(vendorId)
-        allOrders.push(...vendorOrders)
+      // Implement real API call to get all orders from backend
+      const response = await authFetch('/api/admin/orders')
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders')
       }
+      const data = await response.json()
+      const allOrders: Order[] = data.orders || []
 
       let filteredOrders = allOrders
       if (status) {
@@ -186,6 +190,99 @@ function OrdersList({ status }: { status?: Order["status"] }) {
 
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [orders, setOrders] = useState<Order[]>([])
+
+  // Helper to fetch all orders for export (real implementation)
+  const fetchAllOrders = async (): Promise<Order[]> => {
+    try {
+      // Implement real API call to get all orders
+      const response = await authFetch('/api/admin/orders')
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders')
+      }
+      const data = await response.json()
+      return data.orders || []
+    } catch (e) {
+      console.error('Failed to fetch orders for export:', e)
+      return []
+    }
+  }
+
+  const handleExportOrders = async () => {
+    try {
+      const allOrders = await fetchAllOrders()
+      if (!allOrders.length) {
+        showToast.info("No orders to export.")
+        return
+      }
+      // Convert orders to CSV
+      const csvRows = [
+        [
+          "Order ID",
+          "Status",
+          "Created At",
+          "Total",
+          "Buyer ID",
+          "Vendor ID",
+          "Driver ID",
+          "Delivery Address",
+          "Items"
+        ].join(","),
+        ...allOrders.map((order: Order) =>
+          [
+            order.id,
+            order.status,
+            order.createdAt,
+            order.total,
+            order.buyerId,
+            order.vendorId,
+            order.driverId || "",
+            '"' + (order.deliveryAddress || "") + '"',
+            '"' + order.items.map((item: any) => `${item.quantity}x ${item.name}`).join("; ") + '"',
+          ].join(",")
+        ),
+      ]
+      const csvContent = csvRows.join("\n")
+      const blob = new Blob([csvContent], { type: "text/csv" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `orders_export_${Date.now()}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      showToast.success("Orders exported as CSV.")
+    } catch (e) {
+      showToast.error("Failed to export orders.")
+    }
+  }
+
+  const createTestOrder = async () => {
+    try {
+      // Use the vendor test order endpoint which automatically uses real UUIDs
+      const response = await authFetch('/api/order/vendor/test-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Empty body, the endpoint handles everything
+      })
+
+      if (response.ok) {
+        const newOrder = await response.json()
+        showToast.success(`Test order created! ID: ${newOrder.order.id}`)
+        // Refresh the orders list
+        window.location.reload()
+      } else {
+        const error = await response.text()
+        showToast.error(`Failed to create test order: ${error}`)
+      }
+    } catch (error) {
+      console.error('Error creating test order:', error)
+      showToast.error('Failed to create test order. Make sure you are logged in as a vendor.')
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -194,10 +291,16 @@ export default function OrdersPage() {
           <h1 className="text-3xl font-bold">Orders</h1>
           <p className="text-muted-foreground">Monitor all platform orders</p>
         </div>
-        <Button>
-          <Download className="h-4 w-4 mr-2" />
-          Export Orders
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={createTestOrder} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Test Order
+          </Button>
+          <Button onClick={handleExportOrders}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Orders
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -225,8 +328,8 @@ export default function OrdersPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
 
@@ -236,8 +339,8 @@ export default function OrdersPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">+8% from yesterday</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
 
@@ -247,8 +350,8 @@ export default function OrdersPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">Currently processing</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
 
@@ -258,8 +361,8 @@ export default function OrdersPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$3,456</div>
-            <p className="text-xs text-muted-foreground">+15% from yesterday</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
       </div>

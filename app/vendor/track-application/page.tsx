@@ -54,11 +54,20 @@ export default function TrackApplicationPage() {
         const data = await response.json()
         setApplication(data)
       } else {
-        const error = await response.json()
+        // Handle error response
+        let errorMessage = 'Failed to search application'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError)
+        }
+        console.error('Search failed:', errorMessage)
         setApplication(null)
       }
     } catch (error) {
       console.error('Search error:', error)
+      setApplication(null)
     } finally {
       setIsSearching(false)
     }

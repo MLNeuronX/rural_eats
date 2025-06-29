@@ -1,12 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, Plus, Edit, Eye, Mail, Phone, MapPin } from "lucide-react"
+import AddUserDialog from "@/components/admin/add-user-dialog"
+import { showToast } from "@/components/ui/toast-provider"
+import { authFetch } from "@/lib/utils"
+import { getAdminVendors } from "@/lib/data"
+import Link from "next/link"
 
 interface User {
   id: string
@@ -21,71 +26,6 @@ interface User {
   totalSpent?: number
   location: string
 }
-
-// Mock user data
-const mockUsers: User[] = [
-  {
-    id: "u1",
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "(555) 123-4567",
-    role: "buyer",
-    status: "active",
-    joinedDate: "2024-01-15",
-    lastActive: "2024-06-08",
-    totalOrders: 23,
-    totalSpent: 456.78,
-    location: "Rural Town, State",
-  },
-  {
-    id: "u2",
-    name: "Sarah Wilson",
-    email: "sarah@example.com",
-    phone: "(555) 234-5678",
-    role: "buyer",
-    status: "active",
-    joinedDate: "2024-02-20",
-    lastActive: "2024-06-07",
-    totalOrders: 15,
-    totalSpent: 298.45,
-    location: "Rural Town, State",
-  },
-  {
-    id: "u3",
-    name: "Mike Restaurant",
-    email: "mike@restaurant.com",
-    phone: "(555) 345-6789",
-    role: "vendor",
-    status: "active",
-    joinedDate: "2024-01-01",
-    lastActive: "2024-06-08",
-    location: "Downtown, Rural Town",
-  },
-  {
-    id: "u4",
-    name: "Lisa Driver",
-    email: "lisa@driver.com",
-    phone: "(555) 456-7890",
-    role: "driver",
-    status: "active",
-    joinedDate: "2024-03-10",
-    lastActive: "2024-06-08",
-    location: "Rural Town, State",
-  },
-  {
-    id: "u5",
-    name: "Bob Smith",
-    email: "bob@example.com",
-    phone: "(555) 567-8901",
-    role: "buyer",
-    status: "suspended",
-    joinedDate: "2024-04-05",
-    lastActive: "2024-05-20",
-    totalOrders: 3,
-    totalSpent: 67.23,
-    location: "Rural Town, State",
-  },
-]
 
 function UserCard({ user }: { user: User }) {
   const getRoleColor = (role: string) => {
@@ -124,9 +64,8 @@ function UserCard({ user }: { user: User }) {
             <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
               <span className="font-semibold">
                 {user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
+                  ? user.name.split(" ").map((n) => n[0]).join("")
+                  : "U"}
               </span>
             </div>
             <div>
@@ -181,13 +120,17 @@ function UserCard({ user }: { user: User }) {
         <div className="flex justify-between items-center">
           <div className="text-xs text-muted-foreground">User ID: {user.id}</div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-1" />
-              View
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/users/${user.id}`}>
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Link>
             </Button>
-            <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/users/${user.id}?edit=1`}>
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Link>
             </Button>
           </div>
         </div>
@@ -196,19 +139,19 @@ function UserCard({ user }: { user: User }) {
   )
 }
 
-function UsersList({ role }: { role?: string }) {
-  const [users, setUsers] = useState<User[]>(mockUsers)
+function UsersList({ role, users }: { role?: string; users: User[] }) {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredUsers = users.filter((user) => {
+    if (!user.id || !user.role) return false; // Defensive: skip users without id or role
     const matchesSearch =
       searchTerm === "" ||
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesRole = !role || user.role === role
+    const matchesRole = !role || (user.role && user.role.toLowerCase() === role.toLowerCase());
 
-    return matchesSearch && matchesRole
+    return matchesSearch && matchesRole;
   })
 
   return (
@@ -241,11 +184,74 @@ function UsersList({ role }: { role?: string }) {
 }
 
 export default function UsersPage() {
-  const totalUsers = mockUsers.length
-  const buyerCount = mockUsers.filter((u) => u.role === "buyer").length
-  const vendorCount = mockUsers.filter((u) => u.role === "vendor").length
-  const driverCount = mockUsers.filter((u) => u.role === "driver").length
-  const activeUsers = mockUsers.filter((u) => u.status === "active").length
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+
+  // Fetch users from backend
+  const fetchUsers = async () => {
+    try {
+      const res = await authFetch("/api/admin/users");
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const data = await res.json();
+      setUsers(data);
+    } catch (e) {
+      showToast('error', "Failed to load users.");
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const driverCount = users.filter((u) => u.role === "driver").length;
+  const buyerCount = users.filter((u) => u.role === "buyer").length;
+  const vendorCount = users.filter((u) => u.role === "vendor").length;
+  const adminCount = users.filter((u) => u.role === "admin").length;
+  const totalUsers = driverCount + vendorCount + buyerCount + adminCount;
+  const activeUsers = users.filter((u) => u.status === "active").length;
+
+  const handleAddUser = async (user: { name: string; email: string; password: string; role: string }) => {
+    try {
+      // Call backend API to add user
+      const res = await authFetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+      }
+      if (!res.ok) {
+        let errorMessage = "Failed to add user";
+        if (data.error) {
+          errorMessage = data.error;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (res.status === 422) {
+          errorMessage = "Validation error: Please check your input data";
+        } else if (res.status === 409) {
+          errorMessage = "User with this email already exists";
+        } else if (res.status === 400) {
+          errorMessage = "Invalid request data";
+        }
+        showToast('error', errorMessage);
+        throw new Error(errorMessage);
+      }
+      showToast('success', `User ${user.name} was added successfully.`);
+      await fetchUsers(); // Re-fetch users after adding
+    } catch (e: any) {
+      console.error("Error adding user:", e);
+      if (!e.message.includes("Failed to add user") && !e.message.includes("Validation error")) {
+        showToast('error', e.message || "Failed to add user.");
+      }
+      throw e;
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -254,12 +260,12 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold">Users</h1>
           <p className="text-muted-foreground">Manage platform users</p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add User
         </Button>
       </div>
-
+      <AddUserDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onAddUser={handleAddUser} />
       {/* User Stats */}
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
@@ -288,12 +294,17 @@ export default function UsersPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
+            <div className="text-2xl font-bold text-purple-600">{adminCount}</div>
+            <p className="text-sm text-muted-foreground">Admins</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
             <div className="text-2xl font-bold text-purple-600">{activeUsers}</div>
             <p className="text-sm text-muted-foreground">Active Users</p>
           </CardContent>
         </Card>
       </div>
-
       {/* Users Tabs */}
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
@@ -302,21 +313,17 @@ export default function UsersPage() {
           <TabsTrigger value="vendor">Vendors</TabsTrigger>
           <TabsTrigger value="driver">Drivers</TabsTrigger>
         </TabsList>
-
         <TabsContent value="all">
-          <UsersList />
+          <UsersList role="" users={users} />
         </TabsContent>
-
         <TabsContent value="buyer">
-          <UsersList role="buyer" />
+          <UsersList role="buyer" users={users} />
         </TabsContent>
-
         <TabsContent value="vendor">
-          <UsersList role="vendor" />
+          <UsersList role="vendor" users={users} />
         </TabsContent>
-
         <TabsContent value="driver">
-          <UsersList role="driver" />
+          <UsersList role="driver" users={users} />
         </TabsContent>
       </Tabs>
     </div>

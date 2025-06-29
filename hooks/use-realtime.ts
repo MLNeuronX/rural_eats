@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { showToast } from "@/components/ui/toast-provider"
+import { authFetch } from "@/lib/utils"
+import { getOrderById } from "@/lib/data"
 
 interface UseRealtimeOptions {
   interval?: number
@@ -66,7 +68,7 @@ export function useRealtime<T>(
 // Specialized hook for order updates
 export function useOrderUpdates(orderId: string, enabled = true) {
   const { data: order, isLoading, error } = useRealtime(
-    () => fetch(`/api/orders/${orderId}`).then(res => res.json()),
+    () => getOrderById(orderId),
     {
       interval: 3000,
       enabled,
@@ -85,7 +87,12 @@ export function useOrderUpdates(orderId: string, enabled = true) {
 // Hook for vendor dashboard updates
 export function useVendorDashboardUpdates(vendorId: string, enabled = true) {
   const { data: dashboardData, isLoading, error } = useRealtime(
-    () => fetch(`/api/vendor/dashboard/${vendorId}`).then(res => res.json()),
+    async () => {
+      const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+      const response = await authFetch(`${baseApiUrl}/api/vendor/dashboard/${vendorId}`);
+      if (!response.ok) throw new Error('Failed to fetch dashboard data');
+      return response.json();
+    },
     {
       interval: 10000,
       enabled,

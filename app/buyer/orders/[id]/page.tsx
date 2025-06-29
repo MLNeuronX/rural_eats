@@ -7,28 +7,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, MessageCircle, MapPin } from "lucide-react"
-import { getOrderById, type Order } from "@/lib/data"
+import { getOrderById } from "@/lib/data"
 
-function OrderStatusTimeline({ status }: { status: Order["status"] }) {
-  const statuses: Order["status"][] = ["NEW", "CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"]
+function OrderStatusTimeline({ status }: { status: string }) {
+  // Add all possible statuses from backend
+  const statuses: string[] = [
+    "NEW", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ACCEPTED", "ACCEPTED", "ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"
+  ];
 
-  const statusLabels: Record<Order["status"], string> = {
+  const statusLabels: Record<string, string> = {
     NEW: "Order Placed",
     CONFIRMED: "Order Confirmed",
     PREPARING: "Preparing Food",
     READY: "Ready for Pickup",
+    DRIVER_ASSIGNED: "Driver Assigned",
+    DRIVER_ACCEPTED: "Driver Accepted",
+    ACCEPTED: "Accepted",
+    ASSIGNED: "Assigned",
     OUT_FOR_DELIVERY: "Out for Delivery",
     DELIVERED: "Delivered",
-  }
+  };
 
-  const currentIndex = statuses.indexOf(status)
+  const currentIndex = statuses.indexOf(status);
 
   return (
     <div className="space-y-4">
       {statuses.map((s, index) => {
-        const isCompleted = index <= currentIndex
-        const isCurrent = index === currentIndex
-
+        const isCompleted = index <= currentIndex;
+        const isCurrent = index === currentIndex;
         return (
           <div key={s} className="flex items-center gap-3">
             <div
@@ -37,24 +43,28 @@ function OrderStatusTimeline({ status }: { status: Order["status"] }) {
               }`}
             />
             <span className={`text-sm ${isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
-              {statusLabels[s]}
+              {statusLabels[s] || s}
             </span>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 export default function OrderDetailsPage({ params }: { params: { id: string } }) {
-  const [order, setOrder] = useState<Order | null>(null)
+  const [order, setOrder] = useState<any>(null)
+  const [items, setItems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const searchParams = useSearchParams()
   const whatsappLink = searchParams.get("whatsapp")
 
   useEffect(() => {
-    getOrderById(params.id).then((order) => {
-      setOrder(order)
+    getOrderById(params.id).then((res) => {
+      if (res && res.order) {
+        setOrder(res.order)
+        setItems(res.items || [])
+      }
       setIsLoading(false)
     })
   }, [params.id])
@@ -81,6 +91,11 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       </div>
     )
   }
+
+  // Defensive helpers
+  const total = order.total_amount || 0
+  const deliveryFee = order.delivery_fee || 0
+  const subtotal = total - deliveryFee
 
   return (
     <div className="container max-w-md mx-auto px-4 py-6">
@@ -126,12 +141,12 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
           <CardTitle className="text-lg">Order Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {order.items.map((item, index) => (
+          {items.map((item, index) => (
             <div key={index} className="flex justify-between">
               <span>
-                {item.quantity}x {item.name}
+                {item.quantity}x {item.name || item.menu_item_id}
               </span>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <span>${((item.price || item.price_at_time || 0) * item.quantity).toFixed(2)}</span>
             </div>
           ))}
 
@@ -139,19 +154,19 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
 
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>${(order.total - order.deliveryFee).toFixed(2)}</span>
+            <span>${subtotal.toFixed(2)}</span>
           </div>
 
           <div className="flex justify-between">
             <span>Delivery Fee</span>
-            <span>${order.deliveryFee.toFixed(2)}</span>
+            <span>${deliveryFee.toFixed(2)}</span>
           </div>
 
           <Separator />
 
           <div className="flex justify-between font-medium">
             <span>Total</span>
-            <span>${order.total.toFixed(2)}</span>
+            <span>${total.toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
@@ -165,25 +180,25 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
             <div>
               <p className="font-medium">Delivery Address</p>
-              <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
+              <p className="text-sm text-muted-foreground">{order.delivery_address}</p>
             </div>
           </div>
 
-          {order.deliveryTime && (
+          {order.delivery_time && (
             <div className="mt-3">
               <p className="font-medium">Requested Time</p>
-              <p className="text-sm text-muted-foreground">{order.deliveryTime}</p>
+              <p className="text-sm text-muted-foreground">{order.delivery_time}</p>
             </div>
           )}
 
           <div className="mt-3">
             <p className="font-medium">Order Placed</p>
             <p className="text-sm text-muted-foreground">
-              {new Date(order.createdAt).toLocaleDateString()} at{" "}
-              {new Date(order.createdAt).toLocaleTimeString([], {
+              {order.created_at ? new Date(order.created_at).toLocaleDateString() : ""} at{" "}
+              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
-              })}
+              }) : ""}
             </p>
           </div>
         </CardContent>

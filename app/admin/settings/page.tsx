@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Save, Settings, Bell, DollarSign, Globe, Shield } from "lucide-react"
+import { showToast } from "@/components/ui/toast-provider"
+import { authFetch } from "@/lib/utils"
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -15,7 +17,7 @@ export default function SettingsPage() {
     platformName: "Rural Eats",
     supportEmail: "support@ruraleats.com",
     supportPhone: "(555) 123-4567",
-    companyAddress: "123 Main St, Rural Town, State 12345",
+    companyAddress: "",
 
     // Operational Settings
     defaultDeliveryFee: 3.99,
@@ -60,6 +62,13 @@ export default function SettingsPage() {
   const updateSetting = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
+
+  const [companyInfo, setCompanyInfo] = useState({
+    companyName: "",
+    companyAddress: "",
+    supportEmail: "",
+    supportPhone: "",
+  })
 
   return (
     <div className="p-6 space-y-6">
@@ -350,6 +359,88 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Change Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form
+              className="space-y-4 max-w-md"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const currentPassword = (form.elements.namedItem("currentPassword") as HTMLInputElement).value;
+                const newPassword = (form.elements.namedItem("newPassword") as HTMLInputElement).value;
+                const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement).value;
+                if (newPassword && newPassword !== confirmPassword) {
+                  showToast.error("New passwords do not match.");
+                  return;
+                }
+                try {
+                  const res = await authFetch("/api/admin/change-credentials", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      current_password: currentPassword,
+                      new_password: newPassword,
+                    }),
+                  });
+                  
+                  let data: any = {};
+                  try {
+                    data = await res.json();
+                  } catch (e) {
+                    console.error("Failed to parse response:", e);
+                  }
+                  
+                  if (res.ok && data.message) {
+                    showToast.success("Admin credentials updated successfully.");
+                    form.reset();
+                  } else {
+                    // Handle different error response formats
+                    let errorMessage = "Failed to update credentials";
+                    if (data.error) {
+                      errorMessage = data.error;
+                    } else if (data.message) {
+                      errorMessage = data.message;
+                    } else if (data.detail) {
+                      errorMessage = data.detail;
+                    } else if (res.status === 422) {
+                      errorMessage = "Validation error: Please check your input data";
+                    } else if (res.status === 401) {
+                      errorMessage = "Current password is incorrect";
+                    } else if (res.status === 400) {
+                      errorMessage = "Invalid request data";
+                    }
+                    
+                    showToast.error(errorMessage);
+                  }
+                } catch (e: any) {
+                  console.error("Error updating credentials:", e);
+                  showToast.error(e.message || "Failed to update credentials.");
+                }
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input id="currentPassword" name="currentPassword" type="password" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input id="newPassword" name="newPassword" type="password" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input id="confirmPassword" name="confirmPassword" type="password" required />
+              </div>
+              <Button type="submit" className="w-full">Update Credentials</Button>
+            </form>
           </CardContent>
         </Card>
       </div>

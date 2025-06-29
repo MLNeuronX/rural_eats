@@ -1,6 +1,7 @@
 "use client"
 
-import React from "react"
+import * as React from "react"
+import Link from "next/link"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,86 +10,21 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Search, Plus, Edit, Eye, Phone, Mail, MapPin, Star } from "lucide-react"
+import AddDriverDialog from "@/components/admin/add-driver-dialog"
+import { authFetch } from "@/lib/utils"
+import { showToast } from "@/components/ui/toast-provider"
 
 interface Driver {
   id: string
   name: string
   email: string
   phone: string
-  isOnline: boolean
-  isActive: boolean
-  rating: number
-  totalDeliveries: number
-  totalEarnings: number
-  currentLocation: string
-  joinedDate: string
-  vehicleType: string
-  license: string
+  vehicle_type: string
+  role: string
+  created_at: string
+  updated_at: string
+  availability_status: string
 }
-
-// Mock driver data
-const mockDrivers: Driver[] = [
-  {
-    id: "d1",
-    name: "Dave Driver",
-    email: "dave@example.com",
-    phone: "(555) 123-4567",
-    isOnline: true,
-    isActive: true,
-    rating: 4.8,
-    totalDeliveries: 342,
-    totalEarnings: 2840,
-    currentLocation: "Downtown Rural Town",
-    joinedDate: "2024-01-15",
-    vehicleType: "Car",
-    license: "DL123456789",
-  },
-  {
-    id: "d2",
-    name: "Sarah Speed",
-    email: "sarah@example.com",
-    phone: "(555) 234-5678",
-    isOnline: false,
-    isActive: true,
-    rating: 4.9,
-    totalDeliveries: 289,
-    totalEarnings: 2456,
-    currentLocation: "North Side",
-    joinedDate: "2024-02-01",
-    vehicleType: "Motorcycle",
-    license: "DL987654321",
-  },
-  {
-    id: "d3",
-    name: "Mike Mobile",
-    email: "mike@example.com",
-    phone: "(555) 345-6789",
-    isOnline: true,
-    isActive: true,
-    rating: 4.6,
-    totalDeliveries: 156,
-    totalEarnings: 1340,
-    currentLocation: "East District",
-    joinedDate: "2024-03-10",
-    vehicleType: "Bicycle",
-    license: "DL456789123",
-  },
-  {
-    id: "d4",
-    name: "Lisa Lightning",
-    email: "lisa@example.com",
-    phone: "(555) 456-7890",
-    isOnline: true,
-    isActive: false,
-    rating: 4.7,
-    totalDeliveries: 198,
-    totalEarnings: 1680,
-    currentLocation: "West End",
-    joinedDate: "2024-02-20",
-    vehicleType: "Car",
-    license: "DL789123456",
-  },
-]
 
 function DriverCard({
   driver,
@@ -113,6 +49,9 @@ function DriverCard({
     setIsUpdating(false)
   }
 
+  const isActive = driver.availability_status === 'available'
+  const isOnline = driver.availability_status === 'available'
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -120,7 +59,7 @@ function DriverCard({
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
               <span className="text-lg font-semibold">
-                {driver.name
+                {(driver.name ?? "")
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}
@@ -140,65 +79,63 @@ function DriverCard({
               </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  <span>{driver.currentLocation}</span>
+                  <span>Vehicle: {driver.vehicle_type}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span>{driver.rating}</span>
+                  <span>Joined: {new Date(driver.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Badge variant={driver.isActive ? "default" : "destructive"}>
-              {driver.isActive ? "Active" : "Suspended"}
+            <Badge variant={isActive ? "default" : "destructive"}>
+              {isActive ? "Available" : "Offline"}
             </Badge>
-            <Badge variant={driver.isOnline ? "default" : "secondary"}>{driver.isOnline ? "Online" : "Offline"}</Badge>
+            <Badge variant={isOnline ? "default" : "secondary"}>
+              {isOnline ? "Online" : "Offline"}
+            </Badge>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
           <div>
             <span className="text-muted-foreground">Vehicle: </span>
-            <span className="font-medium">{driver.vehicleType}</span>
+            <span className="font-medium">{driver.vehicle_type}</span>
           </div>
           <div>
-            <span className="text-muted-foreground">Deliveries: </span>
-            <span className="font-medium">{driver.totalDeliveries}</span>
+            <span className="text-muted-foreground">Role: </span>
+            <span className="font-medium">{driver.role}</span>
           </div>
           <div>
-            <span className="text-muted-foreground">Earnings: </span>
-            <span className="font-medium">${driver.totalEarnings}</span>
+            <span className="text-muted-foreground">Status: </span>
+            <span className="font-medium">{driver.availability_status}</span>
           </div>
           <div>
             <span className="text-muted-foreground">Joined: </span>
-            <span className="font-medium">{new Date(driver.joinedDate).toLocaleDateString()}</span>
+            <span className="font-medium">{new Date(driver.created_at).toLocaleDateString()}</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Active:</span>
-              <Switch checked={driver.isActive} onCheckedChange={handleStatusToggle} disabled={isUpdating} />
+              <span className="text-sm font-medium">Available:</span>
+              <Switch checked={isActive} onCheckedChange={handleStatusToggle} disabled={isUpdating} />
             </div>
-            {driver.isActive && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Online:</span>
-                <Switch checked={driver.isOnline} onCheckedChange={handleOnlineToggle} disabled={isUpdating} />
-              </div>
-            )}
           </div>
           <div className="flex gap-2">
+            <Link href={`/admin/drivers/${driver.id}`}>
             <Button variant="outline" size="sm">
               <Eye className="h-4 w-4 mr-1" />
               View
             </Button>
+            </Link>
+            <Link href={`/admin/drivers/${driver.id}?edit=1`}>
             <Button variant="outline" size="sm">
               <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
+            </Link>
           </div>
         </div>
       </CardContent>
@@ -207,11 +144,12 @@ function DriverCard({
 }
 
 export default function DriversPage() {
-  const [drivers, setDrivers] = useState<Driver[]>(mockDrivers)
-  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>(mockDrivers)
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all")
   const [onlineFilter, setOnlineFilter] = useState<"all" | "online" | "offline">("all")
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
 
   const filterDrivers = () => {
     let filtered = drivers
@@ -220,20 +158,20 @@ export default function DriversPage() {
     if (searchTerm) {
       filtered = filtered.filter(
         (driver) =>
-          driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          driver.currentLocation.toLowerCase().includes(searchTerm.toLowerCase()),
+          (driver.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+          (driver.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+          (driver.vehicle_type?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
       )
     }
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((driver) => (statusFilter === "active" ? driver.isActive : !driver.isActive))
+      filtered = filtered.filter((driver) => (statusFilter === "active" ? driver.availability_status === 'available' : driver.availability_status !== 'available'))
     }
 
     // Online filter
     if (onlineFilter !== "all") {
-      filtered = filtered.filter((driver) => (onlineFilter === "online" ? driver.isOnline : !driver.isOnline))
+      filtered = filtered.filter((driver) => (onlineFilter === "online" ? driver.availability_status === 'available' : driver.availability_status !== 'available'))
     }
 
     setFilteredDrivers(filtered)
@@ -246,7 +184,7 @@ export default function DriversPage() {
   const handleToggleDriverStatus = async (driver: Driver) => {
     try {
       const updatedDrivers = drivers.map((d) =>
-        d.id === driver.id ? { ...d, isActive: !d.isActive, isOnline: !d.isActive ? false : d.isOnline } : d,
+        d.id === driver.id ? { ...d, availability_status: d.availability_status === 'available' ? 'offline' : 'available' } : d,
       )
       setDrivers(updatedDrivers)
     } catch (error) {
@@ -256,12 +194,186 @@ export default function DriversPage() {
 
   const handleToggleDriverOnline = async (driver: Driver) => {
     try {
-      const updatedDrivers = drivers.map((d) => (d.id === driver.id ? { ...d, isOnline: !d.isOnline } : d))
+      const updatedDrivers = drivers.map((d) => (d.id === driver.id ? { ...d, availability_status: d.availability_status === 'available' ? 'offline' : 'available' } : d))
       setDrivers(updatedDrivers)
     } catch (error) {
       // Handle error
     }
   }
+
+  const fetchDrivers = async () => {
+    try {
+      console.log('Fetching drivers...')
+      const res = await authFetch("/api/admin/drivers");
+      console.log("Fetch drivers response status:", res.status);
+      
+      if (!res.ok) {
+        let data: any = {};
+        try {
+          data = await res.json();
+        } catch (e) {
+          console.error("Failed to parse drivers response:", e);
+        }
+        
+        console.log("Fetch drivers error data:", data);
+        
+        let errorMessage = "Failed to fetch drivers";
+        if (res.status === 422) {
+          // For 422 errors, try to extract more specific error information
+          if (data.msg === 'Not enough segments') {
+            errorMessage = "Authentication token is invalid. Please log out and log back in.";
+          } else if (data.errors && Array.isArray(data.errors)) {
+            errorMessage = data.errors.map((err: any) => err.message || err).join(", ");
+          } else if (data.validation_errors) {
+            errorMessage = data.validation_errors;
+          } else {
+            errorMessage = "Validation error: " + (data.message || data.msg || "Please check your input data");
+          }
+        } else if (res.status === 401) {
+          errorMessage = "Authentication failed. Please log in again.";
+        } else if (res.status === 403) {
+          errorMessage = "Access denied. Admin privileges required.";
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
+        
+        console.error(errorMessage);
+        showToast.error(errorMessage);
+        return;
+      }
+      
+      let data: any = [];
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error("Failed to parse drivers response:", e);
+        return;
+      }
+      
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("Expected array of drivers, got:", typeof data);
+        return;
+      }
+      
+      const mapped = data.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        email: d.email,
+        phone: d.phone,
+        vehicle_type: d.vehicle_type,
+        role: d.role,
+        created_at: d.created_at,
+        updated_at: d.updated_at,
+        availability_status: d.availability_status,
+      }));
+      setDrivers(mapped);
+      console.log("Updated drivers list:", mapped);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      showToast.error("Failed to fetch drivers");
+    }
+  };
+
+  const handleAddDriver = async (driver: { name: string; email: string; phone: string; vehicle_type: string; password: string }) => {
+    try {
+      // Check if user is authenticated
+      const token = localStorage.getItem('token')
+      if (!token || token === 'null' || token === 'undefined' || token.trim() === '') {
+        showToast.error("You are not logged in. Please log in again.");
+        // Redirect to login page
+        window.location.href = '/login';
+        return;
+      }
+      
+      const res = await authFetch("/api/admin/drivers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(driver),
+      });
+      
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+      }
+      
+      console.log("Response status:", res.status);
+      console.log("Response data:", data);
+      
+      if (!res.ok) {
+        // Handle different error response formats
+        let errorMessage = "Failed to add driver";
+        if (data.error) {
+          errorMessage = data.error;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (res.status === 422) {
+          // For 422 errors, try to extract more specific error information
+          if (data.msg === 'Not enough segments') {
+            errorMessage = "Authentication token is invalid. Please log out and log back in.";
+            // Redirect to login page
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 2000);
+          } else if (data.errors && Array.isArray(data.errors)) {
+            errorMessage = data.errors.map((err: any) => err.message || err).join(", ");
+          } else if (data.validation_errors) {
+            errorMessage = data.validation_errors;
+          } else {
+            errorMessage = "Validation error: " + (data.message || data.msg || "Please check your input data");
+          }
+        } else if (res.status === 409) {
+          errorMessage = "Driver with this email already exists";
+        } else if (res.status === 400) {
+          errorMessage = "Invalid request data";
+        } else if (res.status === 401) {
+          errorMessage = "Authentication failed. Please log in again.";
+          // Redirect to login page
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else if (res.status === 403) {
+          errorMessage = "Access denied. Admin privileges required.";
+        }
+        
+        showToast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Check for expected success response structure
+      if (!data.driver || !data.driver.id) {
+        const errorMessage = "Invalid response from server";
+        showToast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      console.log("Driver added successfully, refreshing list...");
+      await fetchDrivers();
+      // Generate registration link
+      const link = `${window.location.origin}/driver/complete-profile?driverId=${data.driver.id}`;
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast.success("Registration link copied to clipboard! Link: " + link);
+      } catch {
+        showToast.success("Registration link generated! Link: " + link);
+      }
+    } catch (error: any) {
+      console.error("Error adding driver:", error);
+      // Don't show error again if we already showed it above
+      if (!error.message.includes("Failed to add driver") && !error.message.includes("Validation error") && !error.message.includes("Invalid response")) {
+        showToast.error(error.message || "Failed to add driver");
+      }
+      throw error;
+    }
+  };
+
+  React.useEffect(() => {
+    fetchDrivers();
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -270,11 +382,12 @@ export default function DriversPage() {
           <h1 className="text-3xl font-bold">Drivers</h1>
           <p className="text-muted-foreground">Manage delivery drivers</p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Driver
         </Button>
       </div>
+      <AddDriverDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onAddDriver={handleAddDriver} />
 
       {/* Filters */}
       <div className="flex gap-4">
@@ -318,23 +431,23 @@ export default function DriversPage() {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600">
-              {drivers.filter((d) => d.isActive && d.isOnline).length}
+              {drivers.filter((d) => d.availability_status === 'available').length}
             </div>
             <p className="text-sm text-muted-foreground">Currently Online</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{drivers.filter((d) => d.isActive).length}</div>
+            <div className="text-2xl font-bold text-blue-600">{drivers.filter((d) => d.availability_status === 'available').length}</div>
             <p className="text-sm text-muted-foreground">Active Drivers</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">
-              {(drivers.reduce((sum, d) => sum + d.rating, 0) / drivers.length).toFixed(1)}
+              {(drivers.reduce((sum, d) => sum + (d.availability_status === 'available' ? 1 : 0), 0) / drivers.length).toFixed(1)}
             </div>
-            <p className="text-sm text-muted-foreground">Average Rating</p>
+            <p className="text-sm text-muted-foreground">Average Availability</p>
           </CardContent>
         </Card>
       </div>

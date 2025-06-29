@@ -18,9 +18,13 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     ASSIGNED: { label: "Assigned", className: "bg-indigo-100 text-indigo-800" },
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
+    DRIVER_ASSIGNED: { label: "Driver Assigned", className: "bg-indigo-100 text-indigo-800" },
+    DRIVER_ACCEPTED: { label: "Driver Accepted", className: "bg-indigo-100 text-indigo-800" },
+    ACCEPTED: { label: "Accepted", className: "bg-green-100 text-green-800" },
   }
 
-  const { label, className } = statusMap[status]
+  // Fallback for unknown statuses
+  const { label, className } = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" }
 
   return <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>{label}</span>
 }
@@ -34,18 +38,24 @@ function OrderCard({ order }: { order: Order }) {
             <div>
               <h3 className="font-medium">Order #{order.id}</h3>
               <p className="text-sm text-muted-foreground">
-                {new Date(order.createdAt).toLocaleDateString()} at{" "}
-                {new Date(order.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {order.createdAt ? (
+                  <>
+                    {new Date(order.createdAt).toLocaleDateString()} at{" "}
+                    {new Date(order.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </>
+                ) : (
+                  "-"
+                )}
               </p>
             </div>
             <OrderStatusBadge status={order.status} />
           </div>
 
           <div className="space-y-1 mb-3">
-            {order.items.map((item, index) => (
+            {(Array.isArray(order.items) ? order.items : []).map((item, index) => (
               <p key={index} className="text-sm">
                 {item.quantity}x {item.name}
               </p>
@@ -53,9 +63,9 @@ function OrderCard({ order }: { order: Order }) {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="font-medium">${order.total.toFixed(2)}</span>
+            <span className="font-medium">${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</span>
             <span className="text-sm text-muted-foreground">
-              {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+              {Array.isArray(order.items) ? order.items.length : 0} item{Array.isArray(order.items) && order.items.length !== 1 ? "s" : ""}
             </span>
           </div>
         </CardContent>
@@ -71,10 +81,10 @@ function OrdersList({ status }: { status?: Order["status"] }) {
 
   useEffect(() => {
     if (user) {
-      getOrdersByBuyer(user.id).then((orders) => {
-        const filteredOrders = status ? orders.filter((order) => order.status === status) : orders
+      getOrdersByBuyer(user.id).then((orders: Order[]) => {
+        const filteredOrders = status ? orders.filter((order: Order) => order.status === status) : orders
 
-        setOrders(filteredOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+        setOrders(filteredOrders.sort((a: Order, b: Order) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
         setIsLoading(false)
       })
     }

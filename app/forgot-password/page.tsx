@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { showToast } from "@/components/ui/toast-provider";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -11,18 +14,20 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+      const baseApiUrl = "http://127.0.0.1:5000";
       const res = await fetch(`${baseApiUrl}/api/user/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      console.log("Response status:", res.status);
       if (res.ok) {
         setSent(true);
+        showToast('success', "Check your email for a password reset link.");
+      } else {
+        showToast('error', "Failed to send reset link. Please check your email and try again.");
       }
     } catch (error) {
-      console.error("Error submitting forgot password:", error);
+      showToast('error', "An error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -35,25 +40,18 @@ export default function ForgotPasswordPage() {
         <p>Check your email for a password reset link.</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* <Input
+          <Input
             type="email"
             placeholder="Your email address"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-          /> */}
-          <input
-            type="email"
-            placeholder="Your email address"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="border p-2 w-full rounded"
           />
-          {/* <Button type="submit" className="w-full">Send Reset Link</Button> */}
-          <input type="submit" className="w-full bg-blue-500 text-white py-2 rounded" value="Send Reset Link" />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Sending..." : "Send Reset Link"}
+          </Button>
         </form>
       )}
     </div>
   );
-} 
+}

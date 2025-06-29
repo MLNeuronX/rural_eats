@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 
 type Role = "buyer" | "vendor" | "driver" | "admin" | null
@@ -19,6 +19,18 @@ interface LoginResult {
   error?: string;
 }
 
+interface VendorProfile {
+  business_name?: string;
+  address?: string;
+  phone?: string;
+  cuisine_type?: string;
+  price_range?: string;
+  opening_time?: string;
+  closing_time?: string;
+  delivery_fee?: string;
+  [key: string]: any;
+}
+
 interface AuthContextType {
   user: User | null
   role: Role
@@ -26,24 +38,11 @@ interface AuthContextType {
   logout: () => void
   switchRole: (role: Role) => void
   isLoading: boolean
+  fetchVendorProfile?: () => Promise<VendorProfile | null>
+  isVendorProfileComplete?: (profile: VendorProfile) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-// Define mock users outside component to prevent recreation
-const mockUsers: Record<string, User> = {
-  buyer: { id: "b1", name: "John Buyer", email: "buyer@example.com", role: "buyer" },
-  vendor: { id: "v1", name: "Mary's Restaurant", email: "vendor@example.com", role: "vendor" },
-  driver: { id: "d1", name: "Dave Driver", email: "driver@example.com", role: "driver" },
-  admin: { id: "a1", name: "Admin User", email: "admin@example.com", role: "admin" },
-}
-
-const defaultAdminUser: User = {
-  id: "preview-admin",
-  name: "Preview Admin",
-  email: "admin@preview.com",
-  role: "admin",
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
     const endpoint = `${baseApiUrl}/api/user/login`;
     try {
       const response = await fetch(endpoint, {
@@ -128,6 +127,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(newRole);
   }, []);
 
+  const fetchVendorProfile = useCallback(async (): Promise<VendorProfile | null> => {
+    if (!user || user.role !== 'vendor') return null;
+    const token = localStorage.getItem('token');
+    const baseApiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5000';
+    const res = await fetch(`${baseApiUrl}/vendor/profile`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      credentials: 'include',
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.vendor || data;
+  }, [user]);
+
+  const isVendorProfileComplete = (profile: VendorProfile) => {
+    const required = [
+      'business_name', 'address', 'phone',
+      'cuisine_type', 'price_range', 'opening_time', 'closing_time', 'delivery_fee'
+    ];
+    return required.every(field => profile[field]);
+  };
+
   const contextValue = {
     user,
     role,
@@ -135,6 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     switchRole,
     isLoading,
+    fetchVendorProfile,
+    isVendorProfileComplete,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
