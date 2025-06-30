@@ -177,21 +177,10 @@ export async function getAdminVendors() {
 
 export async function getVendorById(id: string) {
   try {
-    // Use the public vendor endpoint instead of admin endpoint
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
-    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
-    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
-    const res = await fetch(`${cleanBaseUrl}/api/vendors/${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-    
+    // Use the admin endpoint for admin vendor detail
+    const res = await authFetch(`/api/admin/vendors/${id}`);
     if (!res.ok) throw new Error("Failed to fetch vendor");
     const vendor = await res.json();
-    
     // Map backend fields to frontend as before
     return {
       id: vendor.id,
@@ -209,6 +198,7 @@ export async function getVendorById(id: string) {
       image: vendor.image || null,
       description: vendor.description || '',
       user: vendor.user || null,
+      email: vendor.email || '',
     };
   } catch (error) {
     console.error("getVendorById error:", error);
@@ -742,4 +732,44 @@ export async function updateDriver(id: string, updates: any) {
   });
   if (!res.ok) throw new Error('Failed to update driver');
   return res.json();
+}
+
+// Fetch vendor by ID from the public endpoint (for buyer/public pages)
+export async function getPublicVendorById(id: string) {
+  try {
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const res = await fetch(`${cleanBaseUrl}/api/vendors/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error("Failed to fetch vendor");
+    const vendor = await res.json();
+    // Map backend fields to frontend as before
+    return {
+      id: vendor.id,
+      name: vendor.business_name || 'Unnamed Vendor',
+      address: vendor.address || '',
+      phone: vendor.phone || '',
+      isOpen: vendor.is_open || false,
+      isVerified: vendor.is_verified || false,
+      cuisineType: vendor.cuisine_type || 'N/A',
+      priceRange: vendor.price_range || '$$',
+      rating: vendor.rating || 0,
+      deliveryFee: vendor.delivery_fee || 0,
+      openingTime: vendor.opening_time || 'N/A',
+      closingTime: vendor.closing_time || 'N/A',
+      image: vendor.image || null,
+      description: vendor.description || '',
+      user: vendor.user || null,
+      email: vendor.email || '',
+    };
+  } catch (error) {
+    console.error("getPublicVendorById error:", error);
+    return null;
+  }
 }
