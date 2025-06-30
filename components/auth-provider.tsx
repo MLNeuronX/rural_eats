@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import * as Sentry from '@sentry/nextjs'
 
 type Role = "buyer" | "vendor" | "driver" | "admin" | null
 
@@ -61,13 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
         setRole(savedRole as Role);
-        
-        // Set Sentry user context
-        Sentry.setUser({
-          id: parsedUser.id,
-          email: parsedUser.email,
-          role: savedRole,
-        });
       }
       setIsLoading(false);
       setIsInitialized(true);
@@ -112,45 +104,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('token', data.access_token);
         }
 
-        // Set Sentry user context
-        Sentry.setUser({
-          id: loggedInUser.id,
-          email: loggedInUser.email,
-          role: role,
-        });
-
-        // Add breadcrumb for successful login
-        Sentry.addBreadcrumb({
-          category: 'auth',
-          message: 'User logged in successfully',
-          level: 'info',
-          data: { role, email },
-        });
-
         return { success: true };
       } else if (response.status === 202 && data.login_status === 'application_pending') {
         return { success: false, login_status: 'application_pending', application: data.application };
       } else {
-        // Capture login failure
-        Sentry.captureMessage('Login failed', {
-          level: 'warning',
-          tags: { role, email },
-          contexts: {
-            response: { status: response.status, data },
-          },
-        });
-        
         return { success: false, error: data.error || 'Login failed' };
       }
     } catch (error) {
-      // Capture login error
-      Sentry.captureException(error, {
-        tags: { role, email },
-        contexts: {
-          operation: { name: 'user.login' },
-        },
-      });
-      
       console.error("Login API error:", error);
       return { success: false, error: "An network error occurred. Please try again." };
     } finally {
@@ -159,24 +119,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    // Add breadcrumb for logout
-    Sentry.addBreadcrumb({
-      category: 'auth',
-      message: 'User logged out',
-      level: 'info',
-      data: { role: user?.role, email: user?.email },
-    });
-
-    // Clear Sentry user context
-    Sentry.setUser(null);
-    
     setUser(null)
     setRole(null)
     // Remove from localStorage
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     localStorage.removeItem('token');
-  }, [user]);
+  }, []);
 
   const switchRole = useCallback((newRole: Role) => {
     // This function is now less relevant with a real backend,
