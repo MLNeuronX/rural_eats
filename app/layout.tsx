@@ -8,12 +8,21 @@ import { AuthProvider } from "@/components/auth-provider"
 import { CartProvider } from "@/components/buyer/cart-provider"
 import { ToastProvider } from "@/components/ui/toast-provider"
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary"
+import PerformanceMonitor from "@/components/PerformanceMonitor"
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+})
 
 export const metadata: Metadata = {
   title: "Rural Eats",
   description: "Food delivery for rural communities",
+  viewport: "width=device-width, initial-scale=1",
+  themeColor: "#ffffff",
 }
 
 export default function RootLayout({
@@ -23,6 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className={inter.className}>
         <GlobalErrorBoundary>
         <ThemeProvider
@@ -35,6 +48,8 @@ export default function RootLayout({
             <CartProvider>
               <ToastProvider>
                 {children}
+                <PerformanceMonitor />
+                <ServiceWorkerRegistration />
               </ToastProvider>
             </CartProvider>
           </AuthProvider>
