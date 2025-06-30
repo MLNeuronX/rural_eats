@@ -11,6 +11,8 @@ import GlobalErrorBoundary from "@/components/GlobalErrorBoundary"
 import PerformanceMonitor from "@/components/PerformanceMonitor"
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration"
 import { PageTracker } from "@/components/page-tracker"
+import { Suspense } from "react"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -51,15 +53,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <CartProvider>
-              <ToastProvider>
-                <PageTracker>
-                  {children}
-                </PageTracker>
-                <PerformanceMonitor />
-                <ServiceWorkerRegistration />
-              </ToastProvider>
-            </CartProvider>
+            <Suspense>
+              <PageTracker>{children}</PageTracker>
+            </Suspense>
+            <Toaster />
           </AuthProvider>
         </ThemeProvider>
         </GlobalErrorBoundary>
