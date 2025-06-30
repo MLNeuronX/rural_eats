@@ -50,6 +50,7 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            autoComplete="off"
           />
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Sending..." : "Send Reset Link"}

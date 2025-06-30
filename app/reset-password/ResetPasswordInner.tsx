@@ -51,6 +51,7 @@ export default function ResetPasswordInner() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
+            autoComplete="off"
           />
           <Button type="submit" className="w-full" disabled={isLoading}>Reset Password</Button>
         </form>

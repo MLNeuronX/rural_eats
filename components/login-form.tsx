@@ -155,6 +155,7 @@ export function LoginForm({ role, title }: LoginFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -166,6 +167,7 @@ export function LoginForm({ role, title }: LoginFormProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="off"
             />
             <div className="text-right">
               <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">

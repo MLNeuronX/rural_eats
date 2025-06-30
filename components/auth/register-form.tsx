@@ -199,6 +199,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.email}
               onChange={(e) => updateField("email", e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
 
@@ -210,6 +211,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.phone}
               onChange={(e) => updateField("phone", e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
 
@@ -262,6 +264,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.password}
               onChange={(e) => updateField("password", e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
 
@@ -273,6 +276,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.confirmPassword}
               onChange={(e) => updateField("confirmPassword", e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
 
