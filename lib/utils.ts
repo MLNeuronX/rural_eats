@@ -19,12 +19,14 @@ export async function authFetch(url: string, options: RequestInit = {}) {
     if (url.startsWith('/')) {
       // If it's a relative path, prepend the backend API base URL
       const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000'
-      fullUrl = baseApiUrl.replace(/\/$/, '') + url
+      // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+      const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl
+      fullUrl = cleanBaseUrl.replace(/\/$/, '') + url
     }
     
     console.log('Making API call to:', fullUrl)
     
-    let headers: any = {
+    const headers: any = {
       ...options.headers,
     }
     
@@ -54,7 +56,9 @@ export async function authFetch(url: string, options: RequestInit = {}) {
       if (refreshToken) {
         try {
           const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000'
-          const refreshResponse = await fetch(`${baseApiUrl}/api/user/refresh-token`, {
+          // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+          const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl
+          const refreshResponse = await fetch(`${cleanBaseUrl}/api/user/refresh-token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

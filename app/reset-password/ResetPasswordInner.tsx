@@ -18,7 +18,9 @@ export default function ResetPasswordInner() {
 
     try {
       const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
-      const res = await fetch(`${baseApiUrl}/api/user/reset-password`, {
+      // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+      const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+      const res = await fetch(`${cleanBaseUrl}/api/user/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, new_password: password }),

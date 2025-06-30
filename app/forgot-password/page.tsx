@@ -16,8 +16,10 @@ export default function ForgotPasswordPage() {
     setError("");
 
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
     try {
-      const response = await fetch(`${baseApiUrl}/api/user/forgot-password`, {
+      const response = await fetch(`${cleanBaseUrl}/api/user/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

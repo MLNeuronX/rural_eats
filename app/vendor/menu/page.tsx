@@ -34,9 +34,11 @@ export default function MenuManagement() {
         }
 
         const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
-        console.log("Fetching vendor profile from:", `${baseApiUrl}/api/vendor/profile`);
+        // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+        const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+        console.log("Fetching vendor profile from:", `${cleanBaseUrl}/api/vendor/profile`);
         
-        const res = await fetch(`${baseApiUrl}/api/vendor/profile`, {
+        const res = await fetch(`${cleanBaseUrl}/api/vendor/profile`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

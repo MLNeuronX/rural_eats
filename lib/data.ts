@@ -90,7 +90,9 @@ export async function getVendors(filters?: {
     
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
-    const res = await fetch(`${baseApiUrl}/api/vendors${queryString}`, {
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const res = await fetch(`${cleanBaseUrl}/api/vendors${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -171,7 +173,9 @@ export async function getVendorById(id: string) {
   try {
     // Use the public vendor endpoint instead of admin endpoint
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
-    const res = await fetch(`${baseApiUrl}/api/vendors/${id}`, {
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const res = await fetch(`${cleanBaseUrl}/api/vendors/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -209,7 +213,9 @@ export async function getVendorById(id: string) {
 export async function getMenuItems(vendorId: string) {
   try {
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
-    const res = await fetch(`${baseApiUrl}/api/menu/vendor/${vendorId}/items`, {
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const res = await fetch(`${cleanBaseUrl}/api/menu/vendor/${vendorId}/items`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

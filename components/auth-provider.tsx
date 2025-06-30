@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string, role: Role): Promise<LoginResult> => {
     setIsLoading(true);
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
-    const endpoint = `${baseApiUrl}/api/user/login`;
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const endpoint = `${cleanBaseUrl}/api/user/login`;
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -131,7 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || user.role !== 'vendor') return null;
     const token = localStorage.getItem('token');
     const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rural-eats-backend.onrender.com";
-    const res = await fetch(`${baseApiUrl}/api/vendor/profile`, {
+    // Ensure baseApiUrl doesn't end with /api to prevent double /api/api/ issue
+    const cleanBaseUrl = baseApiUrl.endsWith('/api') ? baseApiUrl.slice(0, -4) : baseApiUrl;
+    const res = await fetch(`${cleanBaseUrl}/api/vendor/profile`, {
       headers: { 'Authorization': `Bearer ${token}` },
       credentials: 'include',
     });
