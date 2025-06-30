@@ -21,9 +21,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Rural Eats",
   description: "Food delivery for rural communities",
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#ffffff",
 }
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+}
+
+export const themeColor = "#ffffff"
 
 export default function RootLayout({
   children,
