@@ -25,7 +25,8 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
   }
 
-  const { label, className } = statusMap[status]
+  const statusObj = statusMap[status] || { label: status || 'Unknown', className: 'bg-gray-200 text-gray-800' }
+  const { label, className } = statusObj
   return <Badge className={className}>{label}</Badge>
 }
 
