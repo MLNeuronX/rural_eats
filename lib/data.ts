@@ -142,8 +142,14 @@ export async function getAdminVendors() {
     const data = await res.json();
     console.log('getAdminVendors: Raw data:', data)
     
+    // Defensive check: if data.data is not an array, return an empty array
+    if (!Array.isArray(data.data)) {
+      console.warn("getAdminVendors: API response's data property is not an array. Returning empty.", data)
+      return []
+    }
+
     // Map backend fields to frontend, providing safe defaults for missing fields
-    const mapped = data.map((vendor: any) => ({
+    const mapped = data.data.map((vendor: any) => ({
       id: vendor.id,
       name: vendor.business_name || 'Unnamed Vendor',
       address: vendor.address || '',
