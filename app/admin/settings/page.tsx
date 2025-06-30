@@ -379,7 +379,7 @@ export default function SettingsPage() {
                 const newPassword = (form.elements.namedItem("newPassword") as HTMLInputElement).value;
                 const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement).value;
                 if (newPassword && newPassword !== confirmPassword) {
-                  showToast.error("New passwords do not match.");
+                  showToast('error', "New passwords do not match.");
                   return;
                 }
                 try {
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                   }
                   
                   if (res.ok && data.message) {
-                    showToast.success("Admin credentials updated successfully.");
+                    showToast('success', "Admin credentials updated successfully.");
                     form.reset();
                   } else {
                     // Handle different error response formats
@@ -419,11 +419,11 @@ export default function SettingsPage() {
                       errorMessage = "Invalid request data";
                     }
                     
-                    showToast.error(errorMessage);
+                    showToast('error', errorMessage);
                   }
                 } catch (e: any) {
                   console.error("Error updating credentials:", e);
-                  showToast.error(e.message || "Failed to update credentials.");
+                  showToast('error', e.message || "Failed to update credentials.");
                 }
               }}
             >
