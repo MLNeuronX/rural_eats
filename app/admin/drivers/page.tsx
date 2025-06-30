@@ -238,7 +238,7 @@ export default function DriversPage() {
         }
         
         console.error(errorMessage);
-        showToast.error(errorMessage);
+        showToast('error', errorMessage);
         return;
       }
       
@@ -249,14 +249,13 @@ export default function DriversPage() {
         console.error("Failed to parse drivers response:", e);
         return;
       }
-      
-      // Ensure data is an array
-      if (!Array.isArray(data)) {
-        console.error("Expected array of drivers, got:", typeof data);
+      // Handle new backend response structure
+      const driversArray = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      if (!Array.isArray(driversArray)) {
+        console.error("Expected array of drivers, got:", typeof driversArray);
         return;
       }
-      
-      const mapped = data.map((d: any) => ({
+      const mapped = driversArray.map((d: any) => ({
         id: d.id,
         name: d.name,
         email: d.email,
@@ -271,7 +270,7 @@ export default function DriversPage() {
       console.log("Updated drivers list:", mapped);
     } catch (error) {
       console.error("Error fetching drivers:", error);
-      showToast.error("Failed to fetch drivers");
+      showToast('error', "Failed to fetch drivers");
     }
   };
 
@@ -280,7 +279,7 @@ export default function DriversPage() {
       // Check if user is authenticated
       const token = localStorage.getItem('token')
       if (!token || token === 'null' || token === 'undefined' || token.trim() === '') {
-        showToast.error("You are not logged in. Please log in again.");
+        showToast('error', "You are not logged in. Please log in again.");
         // Redirect to login page
         window.location.href = '/login';
         return;
@@ -340,32 +339,33 @@ export default function DriversPage() {
           errorMessage = "Access denied. Admin privileges required.";
         }
         
-        showToast.error(errorMessage);
+        showToast('error', errorMessage);
         throw new Error(errorMessage);
       }
       
-      // Check for expected success response structure
-      if (!data.driver || !data.driver.id) {
+      // New backend returns {data: [drivers]}
+      const driversArrayAdd = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      if (!Array.isArray(driversArrayAdd) || driversArrayAdd.length === 0) {
         const errorMessage = "Invalid response from server";
-        showToast.error(errorMessage);
+        showToast('error', errorMessage);
         throw new Error(errorMessage);
       }
-      
-      console.log("Driver added successfully, refreshing list...");
+      // The first driver in the array is the newly added one (since backend orders by created_at desc)
+      const newDriver = driversArrayAdd[0];
       await fetchDrivers();
       // Generate registration link
-      const link = `${window.location.origin}/driver/complete-profile?driverId=${data.driver.id}`;
+      const link = `${window.location.origin}/driver/complete-profile?driverId=${newDriver.id}`;
       try {
         await navigator.clipboard.writeText(link);
-        showToast.success("Registration link copied to clipboard! Link: " + link);
+        showToast('success', "Registration link copied to clipboard! Link: " + link);
       } catch {
-        showToast.success("Registration link generated! Link: " + link);
+        showToast('success', "Registration link generated! Link: " + link);
       }
     } catch (error: any) {
       console.error("Error adding driver:", error);
       // Don't show error again if we already showed it above
       if (!error.message.includes("Failed to add driver") && !error.message.includes("Validation error") && !error.message.includes("Invalid response")) {
-        showToast.error(error.message || "Failed to add driver");
+        showToast('error', error.message || "Failed to add driver");
       }
       throw error;
     }

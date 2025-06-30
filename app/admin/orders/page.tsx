@@ -61,7 +61,7 @@ function OrderCard({ order }: { order: Order }) {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-medium">${order.total.toFixed(2)}</p>
+            <p className="font-medium">${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</p>
             <p className="text-sm text-muted-foreground">Total</p>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default function OrdersPage() {
     try {
       const allOrders = await fetchAllOrders()
       if (!allOrders.length) {
-        showToast.info("No orders to export.")
+        showToast('info', "No orders to export.")
         return
       }
       // Convert orders to CSV
@@ -252,9 +252,9 @@ export default function OrdersPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      showToast.success("Orders exported as CSV.")
+      showToast('success', "Orders exported as CSV.")
     } catch (e) {
-      showToast.error("Failed to export orders.")
+      showToast('error', "Failed to export orders.")
     }
   }
 
@@ -271,16 +271,16 @@ export default function OrdersPage() {
 
       if (response.ok) {
         const newOrder = await response.json()
-        showToast.success(`Test order created! ID: ${newOrder.order.id}`)
+        showToast('success', `Test order created! ID: ${newOrder.order.id}`)
         // Refresh the orders list
         window.location.reload()
       } else {
         const error = await response.text()
-        showToast.error(`Failed to create test order: ${error}`)
+        showToast('error', `Failed to create test order: ${error}`)
       }
     } catch (error) {
       console.error('Error creating test order:', error)
-      showToast.error('Failed to create test order. Make sure you are logged in as a vendor.')
+      showToast('error', 'Failed to create test order. Make sure you are logged in as a vendor.')
     }
   }
 
