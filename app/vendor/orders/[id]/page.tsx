@@ -30,8 +30,8 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
   }
-  const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" }
-  return <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
+  const statusObj = statusMap[status] || { label: status || 'Unknown', className: 'bg-gray-200 text-gray-800' }
+  return <Badge className={statusObj.className}>{statusObj.label}</Badge>
 }
 
 // Real kitchen printer integration
