@@ -55,10 +55,10 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
     try {
       await updateVendor(params.id, mappedForm);
       setVendor(form);
-      showToast.success('Vendor updated!');
+      showToast('success', 'Vendor updated!');
       router.replace('/admin/vendors');
     } catch (err) {
-      showToast.error('Failed to update vendor');
+      showToast('error', 'Failed to update vendor');
     } finally {
       setIsSaving(false);
     }

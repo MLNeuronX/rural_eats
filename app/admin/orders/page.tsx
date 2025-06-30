@@ -57,7 +57,7 @@ function OrderCard({ order }: { order: Order }) {
               <Clock className="h-3 w-3" />
               <span>{timeAgo(order.createdAt)}</span>
               <span>•</span>
-              <span>{order.items.length} items</span>
+              <span>{Array.isArray(order.items) ? order.items.length : 0} items</span>
             </div>
           </div>
           <div className="text-right">
@@ -67,12 +67,12 @@ function OrderCard({ order }: { order: Order }) {
         </div>
 
         <div className="space-y-1 mb-3">
-          {order.items.slice(0, 2).map((item, index) => (
+          {(Array.isArray(order.items) ? order.items.slice(0, 2) : []).map((item, index) => (
             <p key={index} className="text-sm">
               {item.quantity}x {item.name}
             </p>
           ))}
-          {order.items.length > 2 && (
+          {Array.isArray(order.items) && order.items.length > 2 && (
             <p className="text-sm text-muted-foreground">+{order.items.length - 2} more items</p>
           )}
         </div>
@@ -238,7 +238,7 @@ export default function OrdersPage() {
             order.vendorId,
             order.driverId || "",
             '"' + (order.deliveryAddress || "") + '"',
-            '"' + order.items.map((item: any) => `${item.quantity}x ${item.name}`).join("; ") + '"',
+            '"' + (Array.isArray(order.items) ? order.items.map((item: any) => `${item.quantity}x ${item.name}`).join('; ') : '') + '"',
           ].join(",")
         ),
       ]

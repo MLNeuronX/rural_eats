@@ -28,7 +28,7 @@ export default function UserDetailPage() {
         setUser(data);
         setForm(data);
       } catch (err) {
-        showToast.error("Failed to load user details");
+        showToast('error', "Failed to load user details");
       } finally {
         setLoading(false);
       }
@@ -56,10 +56,10 @@ export default function UserDetailPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed to update user");
-      showToast.success("User updated!");
+      showToast('success', "User updated!");
       router.replace(`/admin/users/${userId}`);
     } catch (err) {
-      showToast.error("Failed to update user");
+      showToast('error', "Failed to update user");
     } finally {
       setIsSaving(false);
     }
