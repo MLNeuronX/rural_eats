@@ -190,7 +190,7 @@ export default function UsersPage() {
   // Fetch users from backend
   const fetchUsers = async () => {
     try {
-      const res = await authFetch("/api/admin/users");
+      const res = await authFetch("/api/admin/users?per_page=1000");
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
       setUsers(data.data);

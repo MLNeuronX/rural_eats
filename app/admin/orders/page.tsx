@@ -11,6 +11,14 @@ import { getOrdersByVendor, type Order } from "@/lib/data"
 import { showToast } from "@/components/ui/toast-provider"
 import { authFetch } from "@/lib/utils"
 
+// Define the order interface based on your API response
+interface OrderStats {
+  totalOrders: number
+  todaysOrders: number
+  activeOrders: number
+  todaysRevenue: number
+}
+
 function OrderStatusBadge({ status }: { status: Order["status"] }) {
   const statusMap: Record<Order["status"], { label: string; className: string }> = {
     NEW: { label: "New", className: "bg-blue-100 text-blue-800" },
@@ -23,6 +31,7 @@ function OrderStatusBadge({ status }: { status: Order["status"] }) {
     ASSIGNED: { label: "Assigned", className: "bg-indigo-100 text-indigo-800" },
     OUT_FOR_DELIVERY: { label: "Out for Delivery", className: "bg-orange-100 text-orange-800" },
     DELIVERED: { label: "Delivered", className: "bg-green-100 text-green-800" },
+    pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" }, // Added for your API response
   }
 
   const statusObj = statusMap[status] || { label: status || 'Unknown', className: 'bg-gray-200 text-gray-800' }
@@ -56,13 +65,13 @@ function OrderCard({ order }: { order: Order }) {
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>{timeAgo(order.createdAt)}</span>
+              <span>{timeAgo(order.createdAt || order.created_at)}</span>
               <span>•</span>
               <span>{Array.isArray(order.items) ? order.items.length : 0} items</span>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-medium">${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</p>
+            <p className="font-medium">${(order.total_amount || order.total || 0).toFixed(2)}</p>
             <p className="text-sm text-muted-foreground">Total</p>
           </div>
         </div>
@@ -80,23 +89,25 @@ function OrderCard({ order }: { order: Order }) {
 
         <div className="text-xs text-muted-foreground mb-3">
           <p>
-            <strong>Customer:</strong> {order.buyer?.name || `Buyer #${order.buyerId}`}
+            <strong>Customer:</strong> {order.buyer?.name || `Buyer #${order.buyer_id || order.buyerId}`}
           </p>
           <p>
-            <strong>Vendor:</strong> {order.vendor?.business_name || `Vendor #${order.vendorId}`}
+            <strong>Vendor:</strong> {order.vendor?.business_name || `Vendor #${order.vendor_id || order.vendorId}`}
           </p>
-          {order.driverId && (
+          {(order.driver_id || order.driverId) && (
             <p>
-              <strong>Driver:</strong> {order.driver?.name || `Driver #${order.driverId}`}
+              <strong>Driver:</strong> {order.driver?.name || `Driver #${order.driver_id || order.driverId}`}
             </p>
           )}
           <p>
-            <strong>Address:</strong> {order.deliveryAddress}
+            <strong>Address:</strong> {order.delivery_address || order.deliveryAddress}
           </p>
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="text-xs text-muted-foreground">Created: {new Date(order.createdAt).toLocaleString()}</div>
+          <div className="text-xs text-muted-foreground">
+            Created: {new Date(order.created_at || order.createdAt).toLocaleString()}
+          </div>
           <Button variant="outline" size="sm">
             <Eye className="h-3 w-3 mr-1" />
             View Details
@@ -130,7 +141,9 @@ function OrdersList({ status }: { status?: Order["status"] }) {
         filteredOrders = allOrders.filter((order) => order.status === status)
       }
 
-      setOrders(filteredOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+      setOrders(filteredOrders.sort((a, b) => 
+        new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime()
+      ))
     } catch (error) {
       console.error("Failed to load orders:", error)
     } finally {
@@ -192,6 +205,74 @@ function OrdersList({ status }: { status?: Order["status"] }) {
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [orders, setOrders] = useState<Order[]>([])
+  const [stats, setStats] = useState<OrderStats>({
+    totalOrders: 0,
+    todaysOrders: 0,
+    activeOrders: 0,
+    todaysRevenue: 0
+  })
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+
+  // Calculate stats from orders data
+  const calculateStats = (ordersData: Order[]): OrderStats => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const totalOrders = ordersData.length
+
+    const todaysOrders = ordersData.filter(order => {
+      const orderDate = new Date(order.created_at || order.createdAt)
+      return orderDate >= today && orderDate < tomorrow
+    }).length
+
+    // Active orders are those that are not delivered or cancelled
+    const activeStatuses = ['pending', 'NEW', 'CONFIRMED', 'PREPARING', 'READY', 'DRIVER_ASSIGNED', 'DRIVER_ACCEPTED', 'ACCEPTED', 'ASSIGNED', 'OUT_FOR_DELIVERY']
+    const activeOrders = ordersData.filter(order => 
+      activeStatuses.includes(order.status)
+    ).length
+
+    // Today's revenue from orders created today
+    const todaysRevenue = ordersData
+      .filter(order => {
+        const orderDate = new Date(order.created_at || order.createdAt)
+        return orderDate >= today && orderDate < tomorrow
+      })
+      .reduce((sum, order) => sum + (order.total_amount || order.total || 0), 0)
+
+    return {
+      totalOrders,
+      todaysOrders,
+      activeOrders,
+      todaysRevenue
+    }
+  }
+
+  // Load stats
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setIsLoadingStats(true)
+        const response = await authFetch('/api/admin/orders')
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders')
+        }
+        const data = await response.json()
+        const ordersData: Order[] = data.orders || []
+        
+        const calculatedStats = calculateStats(ordersData)
+        setStats(calculatedStats)
+        setOrders(ordersData)
+      } catch (error) {
+        console.error("Failed to load stats:", error)
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+
+    loadStats()
+  }, [])
 
   // Helper to fetch all orders for export (real implementation)
   const fetchAllOrders = async (): Promise<Order[]> => {
@@ -222,24 +303,30 @@ export default function OrdersPage() {
           "Order ID",
           "Status",
           "Created At",
-          "Total",
+          "Total Amount",
           "Buyer ID",
           "Vendor ID",
           "Driver ID",
           "Delivery Address",
-          "Items"
+          "Subtotal",
+          "Delivery Fee",
+          "Tip Amount",
+          "Is Paid"
         ].join(","),
-        ...allOrders.map((order: Order) =>
+        ...allOrders.map((order: any) =>
           [
             order.id,
             order.status,
-            order.createdAt,
-            order.total,
-            order.buyerId,
-            order.vendorId,
-            order.driverId || "",
-            '"' + (order.deliveryAddress || "") + '"',
-            '"' + (Array.isArray(order.items) ? order.items.map((item: any) => `${item.quantity}x ${item.name}`).join('; ') : '') + '"',
+            order.created_at || order.createdAt,
+            order.total_amount || order.total || 0,
+            order.buyer_id || order.buyerId,
+            order.vendor_id || order.vendorId,
+            order.driver_id || order.driverId || "",
+            '"' + (order.delivery_address || order.deliveryAddress || "") + '"',
+            order.subtotal || 0,
+            order.delivery_fee || 0,
+            order.tip_amount || 0,
+            order.is_paid || false
           ].join(",")
         ),
       ]
@@ -273,7 +360,7 @@ export default function OrdersPage() {
       if (response.ok) {
         const newOrder = await response.json()
         showToast('success', `Test order created! ID: ${newOrder.order.id}`)
-        // Refresh the orders list
+        // Refresh the orders list and stats
         window.location.reload()
       } else {
         const error = await response.text()
@@ -329,8 +416,12 @@ export default function OrdersPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Loading...</p>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "-" : stats.totalOrders.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingStats ? "Loading..." : "All time orders"}
+            </p>
           </CardContent>
         </Card>
 
@@ -340,8 +431,12 @@ export default function OrdersPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Loading...</p>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "-" : stats.todaysOrders.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingStats ? "Loading..." : "Orders placed today"}
+            </p>
           </CardContent>
         </Card>
 
@@ -351,8 +446,12 @@ export default function OrdersPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Loading...</p>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "-" : stats.activeOrders.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingStats ? "Loading..." : "Pending & in progress"}
+            </p>
           </CardContent>
         </Card>
 
@@ -362,8 +461,12 @@ export default function OrdersPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Loading...</p>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "-" : `$${stats.todaysRevenue.toFixed(2)}`}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingStats ? "Loading..." : "From today's orders"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -376,6 +479,7 @@ export default function OrdersPage() {
           <TabsTrigger value="PREPARING">Preparing</TabsTrigger>
           <TabsTrigger value="OUT_FOR_DELIVERY">Out for Delivery</TabsTrigger>
           <TabsTrigger value="DELIVERED">Delivered</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -396,6 +500,10 @@ export default function OrdersPage() {
 
         <TabsContent value="DELIVERED">
           <OrdersList status="DELIVERED" />
+        </TabsContent>
+
+        <TabsContent value="pending">
+          <OrdersList status="pending" />
         </TabsContent>
       </Tabs>
     </div>
