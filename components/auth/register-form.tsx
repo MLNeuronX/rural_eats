@@ -169,6 +169,12 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
+        {/* Hidden form to prevent autofill */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <input type="text" name="fakeusernameremembered" />
+          <input type="password" name="fakepasswordremembered" />
+        </div>
+        
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -178,6 +184,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
                 value={formData.firstName}
                 onChange={(e) => updateField("firstName", e.target.value)}
                 required
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">
@@ -187,6 +194,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
                 value={formData.lastName}
                 onChange={(e) => updateField("lastName", e.target.value)}
                 required
+                autoComplete="off"
               />
             </div>
           </div>
@@ -200,6 +208,10 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               onChange={(e) => updateField("email", e.target.value)}
               required
               autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              data-form-type="other"
             />
           </div>
 
@@ -224,6 +236,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
                   value={formData.businessName}
                   onChange={(e) => updateField("businessName", e.target.value)}
                   required
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -233,6 +246,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
                   value={formData.businessAddress}
                   onChange={(e) => updateField("businessAddress", e.target.value)}
                   required
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -243,6 +257,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
                   value={formData.businessType}
                   onChange={(e) => updateField("businessType", e.target.value)}
                   required
+                  autoComplete="off"
                 >
                   <option value="">Select business type</option>
                   <option value="restaurant">Restaurant</option>
@@ -264,7 +279,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.password}
               onChange={(e) => updateField("password", e.target.value)}
               required
-              autoComplete="off"
+              autoComplete="new-password"
             />
           </div>
 
@@ -276,7 +291,7 @@ export function RegisterForm({ role, title }: RegisterFormProps) {
               value={formData.confirmPassword}
               onChange={(e) => updateField("confirmPassword", e.target.value)}
               required
-              autoComplete="off"
+              autoComplete="new-password"
             />
           </div>
 

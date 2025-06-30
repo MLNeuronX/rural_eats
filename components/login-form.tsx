@@ -145,6 +145,12 @@ export function LoginForm({ role, title }: LoginFormProps) {
         <CardDescription>Enter your credentials to access your account</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
+        {/* Hidden form to prevent autofill */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <input type="text" name="fakeusernameremembered" />
+          <input type="password" name="fakepasswordremembered" />
+        </div>
+        
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -155,7 +161,11 @@ export function LoginForm({ role, title }: LoginFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="off"
+              autoComplete="username"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              data-form-type="other"
             />
           </div>
           <div className="space-y-2">
@@ -167,7 +177,7 @@ export function LoginForm({ role, title }: LoginFormProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoComplete="off"
+              autoComplete="new-password"
             />
             <div className="text-right">
               <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
