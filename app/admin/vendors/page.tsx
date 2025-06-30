@@ -133,7 +133,7 @@ export default function VendorsPage() {
       console.log('Updated vendors list:', vendorsData)
     } catch (error) {
       console.error('Error loading vendors:', error)
-      showToast.error('Failed to load vendors')
+      showToast('error', 'Failed to load vendors')
     } finally {
       setIsLoading(false)
     }
@@ -165,10 +165,10 @@ export default function VendorsPage() {
       const updatedVendor = await updateVendorAvailability(vendor.id, !vendor.isOpen);
       if (updatedVendor) {
         setVendors(vendors.map((v) => (v.id === vendor.id ? updatedVendor : v)));
-        showToast.success(`Vendor is now ${updatedVendor.isOpen ? 'Open' : 'Closed'}`);
+        showToast('success', `Vendor is now ${updatedVendor.isOpen ? 'Open' : 'Closed'}`);
       }
     } catch (e) {
-      showToast.error('Failed to update vendor status');
+      showToast('error', 'Failed to update vendor status');
     }
   };
 
@@ -204,20 +204,20 @@ export default function VendorsPage() {
         errorMessage = "Invalid request data";
       }
       
-      showToast.error(errorMessage);
+      showToast('error', errorMessage);
       throw new Error(errorMessage);
     }
     
     // Check for expected success response structure
     if (!data.vendor || !data.vendor.id) {
       const errorMessage = "Invalid response from server";
-      showToast.error(errorMessage);
+      showToast('error', errorMessage);
       throw new Error(errorMessage);
     }
     
     console.log("Vendor added successfully, refreshing list...");
     await loadVendors();
-    showToast.success(`Vendor ${vendor.business_name} was added successfully.`);
+    showToast('success', `Vendor ${vendor.business_name} was added successfully.`);
     return { id: data.vendor.id };
   };
 
