@@ -10,6 +10,7 @@ import { ToastProvider } from "@/components/ui/toast-provider"
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary"
 import PerformanceMonitor from "@/components/PerformanceMonitor"
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration"
+import { PageTracker } from "@/components/page-tracker"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -52,7 +53,9 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               <ToastProvider>
-                {children}
+                <PageTracker>
+                  {children}
+                </PageTracker>
                 <PerformanceMonitor />
                 <ServiceWorkerRegistration />
               </ToastProvider>
