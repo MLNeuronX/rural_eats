@@ -1,5 +1,6 @@
 import { authFetch } from "@/lib/utils";
 
+
 // Types
 export type OrderStatus = "NEW" | "CONFIRMED" | "PREPARING" | "READY" | "DRIVER_ASSIGNED" | "DRIVER_ACCEPTED" | "ACCEPTED" | "ASSIGNED" | "OUT_FOR_DELIVERY" | "DELIVERED"
 
@@ -718,11 +719,7 @@ export async function updateVendor(id: string, updates: any) {
   return res.json();
 }
 
-export async function getDriverById(id: string) {
-  const res = await authFetch(`/api/admin/drivers/${id}`);
-  if (!res.ok) throw new Error('Failed to fetch driver');
-  return res.json();
-}
+
 
 export async function updateDriver(id: string, updates: any) {
   const res = await authFetch(`/api/admin/drivers/${id}`, {
@@ -731,6 +728,15 @@ export async function updateDriver(id: string, updates: any) {
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error('Failed to update driver');
+  return res.json();
+}
+
+// In your lib/data.ts or similar file:
+// Make sure this includes token if needed
+
+export async function getDriverById(id: string) {
+  const res = await authFetch(`/api/admin/drivers/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch driver");
   return res.json();
 }
 
