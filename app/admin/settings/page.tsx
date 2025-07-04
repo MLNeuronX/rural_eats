@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,64 +12,75 @@ import { showToast } from "@/components/ui/toast-provider"
 import { authFetch } from "@/lib/utils"
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    // General Settings
-    platformName: "Rural Eats",
-    supportEmail: "support@ruraleats.com",
-    supportPhone: "(555) 123-4567",
-    companyAddress: "",
-
-    // Operational Settings
-    defaultDeliveryFee: 3.99,
-    minimumOrderAmount: 10.0,
-    maxDeliveryRadius: 15,
-    averageDeliveryTime: 30,
-
-    // Commission Settings
-    vendorCommission: 15,
-    driverCommission: 80,
-    platformFee: 0.3,
-
-    // Notification Settings
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    orderAlerts: true,
-    systemAlerts: true,
-
-    // Feature Flags
-    allowGuestOrders: false,
-    enableRatings: true,
-    enablePromotions: true,
-    enableScheduledDelivery: true,
-    maintainanceMode: false,
-  })
-
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSave = async () => {
-    setIsLoading(true)
+ const [settings, setSettings] = useState<unknown | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+const camelize = (obj: Record<string, any>) => {
+  const result: Record<string, any> = {}
+  for (const key in obj) {
+    const camelKey = key.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
+    result[camelKey] = obj[key]
+  }
+  return result
+}
+  const fetchSettings = async () => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-    } catch (error) {
-      // Handle error
+      const res = await authFetch("/api/admin/platform-settings")
+      const data = await res.json()
+      if (res.ok && data) {
+        setSettings(camelize(data))
+      } else {
+        showToast("error", data.error || "Failed to load settings")
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch settings", error)
+      showToast("error", error.message || "Unable to fetch settings")
+    }
+  }
+
+  useEffect(() => {
+    fetchSettings()
+  }, [])
+
+  const toSnakeCase = (obj: Record<string, any>) => {
+  const result: Record<string, any> = {}
+  for (const key in obj) {
+    const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase()
+    result[snakeKey] = obj[key]
+  }
+  return result
+}
+  const handleSave = async () => {
+    
+    setIsLoading(true)
+    const snakeCaseSettings = toSnakeCase(settings)
+    try {
+      const res = await authFetch("/api/admin/platform-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snakeCaseSettings),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast("success", "Settings updated successfully")
+        setSettings(data);
+      } else {
+        showToast("error", data.error || "Failed to update settings")
+      }
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      showToast("error", error.message || "Unable to save settings")
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   const updateSetting = (key: string, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }))
+    setSettings((prev: any) => ({ ...prev, [key]: value }))
   }
 
-  const [companyInfo, setCompanyInfo] = useState({
-    companyName: "",
-    companyAddress: "",
-    supportEmail: "",
-    supportPhone: "",
-  })
-
+  if (!settings) return <div className="p-6">Loading settings...</div>
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

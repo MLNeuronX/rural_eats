@@ -21,14 +21,16 @@ export default function DriverDetailPage({ params }: { params: { id: string } })
     async function fetchDriver() {
       setLoading(true);
       try {
+
+        console.log("===>>>>>>>>>>>>",params.id);
         const found = await getDriverById(params.id);
         setDriver(found || null);
         setForm({
           ...found,
-          vehicleType: found?.vehicle_type || "", // frontend field
+          vehicleType: found?.vehicle_type || "",
         });
       } catch (err) {
-        console.error("Failed to fetch driver", err);
+        console.error("Failed to fetch driver =======>>>>>>>", err);
       }
       setLoading(false);
     }

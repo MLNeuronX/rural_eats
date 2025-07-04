@@ -182,15 +182,34 @@ export default function DriversPage() {
   }, [drivers, searchTerm, statusFilter, onlineFilter])
 
   const handleToggleDriverStatus = async (driver: Driver) => {
-    try {
-      const updatedDrivers = drivers.map((d) =>
-        d.id === driver.id ? { ...d, availability_status: d.availability_status === 'available' ? 'offline' : 'available' } : d,
-      )
-      setDrivers(updatedDrivers)
-    } catch (error) {
-      // Handle error
+  try {
+    const newStatus = driver.availability_status === 'available' ? 'offline' : 'available'
+
+    const res = await authFetch(`/api/admin/changeDriverStatus/${driver.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      console.error("PATCH failed:", err)
+      showToast("error", err?.error || "Failed to update driver status")
+      return
     }
+
+    // Update local state only after backend confirms change
+    const updatedDrivers = drivers.map((d) =>
+      d.id === driver.id ? { ...d, availability_status: newStatus } : d
+    )
+    setDrivers(updatedDrivers)
+  } catch (err) {
+    console.error("Error updating status:", err)
+    showToast("error", "Server error updating driver")
   }
+}
+
 
   const handleToggleDriverOnline = async (driver: Driver) => {
     try {
