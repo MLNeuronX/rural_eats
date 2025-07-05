@@ -21,17 +21,14 @@ import {
 } from "recharts"
 import { TrendingUp, DollarSign, Users, ShoppingBag, Clock, Truck } from "lucide-react"
 import { authFetch } from "@/lib/utils"
-
-const revenueData = [
-  // TODO: Replace with real revenue data from API
-]
+import { showToast } from "@/components/ui/toast-provider"
 
 const vendorPerformance: any[] = [
   // TODO: Replace with real vendor data from API
 ]
 
 const orderTrends = [
-  // TODO: Replace with real order trends from API
+
 ]
 
 const cuisineDistribution = [
@@ -69,25 +66,99 @@ interface UserAnalytics {
   period: string
 }
 
+interface DailyRevenue {
+  date: string
+  revenue: number
+  orders: number
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(null)
+  const [revenueData, setRevenueData] = useState<DailyRevenue[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const fetchDailyRevenue = async () => {
+    try {
+      const response = await authFetch('/api/admin/daily-revenue');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch daily revenue:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch daily revenue data');
+      }
+
+      const data = await response.json();
+      console.log('Daily revenue data:', data);
+
+      // Handle different possible response formats
+      let revenueArray: DailyRevenue[] = [];
+
+      if (Array.isArray(data)) {
+        revenueArray = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        revenueArray = data.data;
+      } else if (data.revenue && Array.isArray(data.revenue)) {
+        revenueArray = data.revenue;
+      } else {
+        console.warn('Unexpected revenue data format:', data);
+        revenueArray = [];
+      }
+
+      // Transform the data for the chart
+      const transformedData = revenueArray.map(item => {
+        const day = new Date(item.date);
+        return {
+          day: new Date(item.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          }),
+          revenue: parseFloat(item.revenue?.toString() || '0'),
+          orders: parseInt(item.orders?.toString() || '0')
+        };
+      });
+
+      setRevenueData(transformedData);
+    } catch (err) {
+      console.error('Error fetching daily revenue:', err);
+      showToast('error', 'Failed to load revenue data');
+      setRevenueData([]); // Set empty array on error
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const statsResponse = await authFetch('/api/admin/dashboard-stats');
-        const statsData = statsResponse.ok ? await statsResponse.json() : {};
-        setStats(statsData);
-    
-        const userResponse = await authFetch('/api/admin/analytics/users');
-        const userData = userResponse.ok ? await userResponse.json() : {};
-        setUserAnalytics(userData);
+
+        // Fetch all data in parallel
+        const [statsResponse, userResponse] = await Promise.all([
+          authFetch('/api/admin/dashboard-stats'),
+          authFetch('/api/admin/analytics/users')
+        ]);
+
+        // Handle stats response
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        } else {
+          console.error('Failed to fetch dashboard stats');
+        }
+
+        // Handle user analytics response
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUserAnalytics(userData);
+        } else {
+          console.error('Failed to fetch user analytics');
+        }
+
+        // Fetch daily revenue data
+        await fetchDailyRevenue();
+
       } catch (err) {
         console.error('Error fetching analytics data:', err);
         setError('Failed to load analytics data');
@@ -202,39 +273,79 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Revenue and Orders Trend */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
+      {/* <div className="grid gap-6 md:grid-cols-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-0">
+            <CardTitle>Daily Revenue Trend</CardTitle>
+            <p className="text-sm text-muted-foreground mb-2">
+              {revenueData.length > 0 ? `Last ${revenueData.length} days` : 'No data available'}
+            </p>
           </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                revenue: {
-                  label: "Revenue",
-                  color: "hsl(var(--chart-1))",
-                },
-              }}
-              className="h-[300px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="var(--color-revenue)"
-                    fill="var(--color-revenue)"
-                    fillOpacity={0.2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+
+          <CardContent className="p-0">
+            <div className="h-[320px] w-full">
+              {revenueData.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    revenue: {
+                      label: "Revenue ($)",
+                      color: "hsl(var(--chart-1))",
+                    },
+                  }}
+                  className="h-full"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={revenueData} margin={{ top: 20, right: 20, bottom: 40, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="day"
+                        fontSize={12}
+                        angle={-35}
+                        interval={0}
+                        textAnchor="end"
+                        height={60}
+                        tickFormatter={(date) => {
+                          const d = new Date(date)
+                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        }}
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tickFormatter={(value) => `$${value}`}
+                      />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            formatter={(value, name) => [
+                              `$${parseFloat(value.toString()).toFixed(2)}`,
+                              name,
+                            ]}
+                          />
+                        }
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="var(--color-revenue)"
+                        fill="var(--color-revenue)"
+                        fillOpacity={0.2}
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No revenue data available</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
+
 
         <Card>
           <CardHeader>
@@ -262,7 +373,7 @@ export default function AnalyticsPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* User Role Distribution */}
       {userAnalytics && (
@@ -313,8 +424,8 @@ export default function AnalyticsPage() {
                 {userAnalytics.users_by_role.map((roleData, index) => (
                   <div key={roleData.role} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
+                      <div
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
                       <span className="font-medium">{roleData.role}</span>
@@ -361,7 +472,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Vendor Performance and Cuisine Distribution */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Top Performing Vendors</CardTitle>
@@ -425,7 +536,7 @@ export default function AnalyticsPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Driver Metrics */}
       <Card>
@@ -443,8 +554,8 @@ export default function AnalyticsPage() {
               <div className="mt-2 bg-muted rounded-full h-2">
                 <div
                   className="bg-primary rounded-full h-2 transition-all"
-                  style={{ 
-                    width: `${stats?.total_drivers ? (stats.active_drivers / stats.total_drivers) * 100 : 0}%` 
+                  style={{
+                    width: `${stats?.total_drivers ? (stats.active_drivers / stats.total_drivers) * 100 : 0}%`
                   }}
                 />
               </div>
