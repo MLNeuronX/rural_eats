@@ -32,16 +32,17 @@ function DriverCard({
   onToggleOnline,
 }: {
   driver: Driver
-  onToggleStatus: (driver: Driver) => void
+  onToggleStatus: (driver: Driver, status: "active" | "suspended") => void
   onToggleOnline: (driver: Driver) => void
 }) {
   const [isUpdating, setIsUpdating] = useState(false)
 
-  const handleStatusToggle = async () => {
+  const handleStatusToggle = async (status: "active" | "suspended") => {
     setIsUpdating(true)
-    await onToggleStatus(driver)
+    await onToggleStatus(driver, status)
     setIsUpdating(false)
   }
+
 
   const handleOnlineToggle = async () => {
     setIsUpdating(true)
@@ -49,8 +50,6 @@ function DriverCard({
     setIsUpdating(false)
   }
 
-  const isActive = driver.availability_status === 'available'
-  const isOnline = driver.availability_status === 'available'
 
   return (
     <Card>
@@ -87,13 +86,17 @@ function DriverCard({
               </div>
             </div>
           </div>
+
           <div className="flex flex-col gap-2">
-            <Badge variant={isActive ? "default" : "destructive"}>
-              {isActive ? "Available" : "Offline"}
-            </Badge>
-            <Badge variant={isOnline ? "default" : "secondary"}>
-              {isOnline ? "Online" : "Offline"}
-            </Badge>
+            {driver.availabilty_status === "active" ? (
+              <span className="text-green-700 border border-green-500 rounded px-2 py-1 text-sm font-semibold">
+                Online
+              </span>
+            ) : (
+              <span className="text-red-700 border border-red-500 rounded px-2 py-1 text-sm font-semibold">
+                Offline
+              </span>
+            )}
           </div>
         </div>
 
@@ -108,7 +111,7 @@ function DriverCard({
           </div>
           <div>
             <span className="text-muted-foreground">Status: </span>
-            <span className="font-medium">{driver.availability_status}</span>
+            <span className="font-medium">{driver.availabilty_status}</span>
           </div>
           <div>
             <span className="text-muted-foreground">Joined: </span>
@@ -119,27 +122,40 @@ function DriverCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Available:</span>
-              <Switch checked={isActive} onCheckedChange={handleStatusToggle} disabled={isUpdating} />
+              <span className="text-sm font-medium">Set Status:</span>
+              <select
+                value={driver.availabilty_status}
+                onChange={(e) =>
+                  handleStatusToggle(e.target.value as "active" | "suspended")
+                }
+                disabled={isUpdating}
+                className="px-2 py-1 border rounded-md bg-background"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+
             </div>
           </div>
+
           <div className="flex gap-2">
             <Link href={`/admin/drivers/${driver.id}`}>
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
+              <Button variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Button>
             </Link>
             <Link href={`/admin/drivers/${driver.id}?edit=1`}>
-            <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
             </Link>
           </div>
         </div>
       </CardContent>
     </Card>
+
   )
 }
 
@@ -151,64 +167,80 @@ export default function DriversPage() {
   const [onlineFilter, setOnlineFilter] = useState<"all" | "online" | "offline">("all")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
-  const filterDrivers = () => {
-    let filtered = drivers
+  // Fixed filterDrivers function
+const filterDrivers = () => {
+  let filtered = drivers
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (driver) =>
-          (driver.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-          (driver.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-          (driver.vehicle_type?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((driver) => (statusFilter === "active" ? driver.availability_status === 'available' : driver.availability_status !== 'available'))
-    }
-
-    // Online filter
-    if (onlineFilter !== "all") {
-      filtered = filtered.filter((driver) => (onlineFilter === "online" ? driver.availability_status === 'available' : driver.availability_status !== 'available'))
-    }
-
-    setFilteredDrivers(filtered)
+  // Search filter
+  if (searchTerm) {
+    filtered = filtered.filter(
+      (driver) =>
+        (driver.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (driver.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (driver.vehicle_type?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
+    )
   }
+
+  // Status filter - FIXED LOGIC
+  if (statusFilter !== "all") {
+    filtered = filtered.filter((driver) => {
+      if (statusFilter === "active") {
+        return driver.availabilty_status === 'active'
+      } else if (statusFilter === "suspended") {
+        return driver.availabilty_status === 'suspended'
+      }
+      return true
+    })
+  }
+
+  // Online filter - FIXED LOGIC (assuming this should filter by availability_status)
+  if (onlineFilter !== "all") {
+    filtered = filtered.filter((driver) => {
+      if (onlineFilter === "online") {
+        return driver.availabilty_status === 'active'
+      } else if (onlineFilter === "offline") {
+        return driver.availabilty_status !== 'active'
+      }
+      return true
+    })
+  }
+
+  setFilteredDrivers(filtered)
+}
 
   React.useEffect(() => {
     filterDrivers()
   }, [drivers, searchTerm, statusFilter, onlineFilter])
 
-  const handleToggleDriverStatus = async (driver: Driver) => {
-  try {
-    const newStatus = driver.availability_status === 'available' ? 'offline' : 'available'
+  const handleToggleDriverStatus = async (driver: Driver, status: "online" | "offline") => {
+    try {
+      const res = await authFetch(`/api/admin/changeDriverStatus/${driver.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status })
+      })
 
-    const res = await authFetch(`/api/admin/changeDriverStatus/${driver.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-    })
+      if (!res.ok) {
+        const err = await res.json()
+        console.error("PATCH failed:", err)
+        showToast("error", err?.error || "Failed to update driver status")
+        return
+      }
 
-    if (!res.ok) {
-      const err = await res.json()
-      console.error("PATCH failed:", err)
-      showToast("error", err?.error || "Failed to update driver status")
-      return
+      showToast("success", "Driver status updated successfully")
+
+      // ✅ Re-fetch the drivers list to reflect the latest state
+      await fetchDrivers()
+    } catch (err) {
+      console.error("Error updating status:", err)
+      showToast("error", "Server error updating driver")
     }
-
-    // Update local state only after backend confirms change
-    const updatedDrivers = drivers.map((d) =>
-      d.id === driver.id ? { ...d, availability_status: newStatus } : d
-    )
-    setDrivers(updatedDrivers)
-  } catch (err) {
-    console.error("Error updating status:", err)
-    showToast("error", "Server error updating driver")
   }
-}
+
+
+
 
 
   const handleToggleDriverOnline = async (driver: Driver) => {
@@ -223,9 +255,9 @@ export default function DriversPage() {
   const fetchDrivers = async () => {
     try {
       console.log('Fetching drivers...')
-      const res = await authFetch("/api/admin/drivers");
+      const res = await authFetch("/api/admin/getDrivers");
       console.log("Fetch drivers response status:", res.status);
-      
+
       if (!res.ok) {
         let data: any = {};
         try {
@@ -233,9 +265,9 @@ export default function DriversPage() {
         } catch (e) {
           console.error("Failed to parse drivers response:", e);
         }
-        
+
         console.log("Fetch drivers error data:", data);
-        
+
         let errorMessage = "Failed to fetch drivers";
         if (res.status === 422) {
           // For 422 errors, try to extract more specific error information
@@ -255,12 +287,12 @@ export default function DriversPage() {
         } else if (data.error) {
           errorMessage = data.error;
         }
-        
+
         console.error(errorMessage);
         showToast('error', errorMessage);
         return;
       }
-      
+
       let data: any = [];
       try {
         data = await res.json();
@@ -283,7 +315,7 @@ export default function DriversPage() {
         role: d.role,
         created_at: d.created_at,
         updated_at: d.updated_at,
-        availability_status: d.availability_status,
+        availabilty_status: d.availabilty_status,
       }));
       setDrivers(mapped);
       console.log("Updated drivers list:", mapped);
@@ -303,23 +335,23 @@ export default function DriversPage() {
         window.location.href = '/login';
         return;
       }
-      
+
       const res = await authFetch("/api/admin/drivers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(driver),
       });
-      
+
       let data: any = {};
       try {
         data = await res.json();
       } catch (e) {
         console.error("Failed to parse response:", e);
       }
-      
+
       console.log("Response status:", res.status);
       console.log("Response data:", data);
-      
+
       if (!res.ok) {
         // Handle different error response formats
         let errorMessage = "Failed to add driver";
@@ -357,11 +389,11 @@ export default function DriversPage() {
         } else if (res.status === 403) {
           errorMessage = "Access denied. Admin privileges required.";
         }
-        
+
         showToast('error', errorMessage);
         throw new Error(errorMessage);
       }
-      
+
       // New backend returns {data: [drivers]}
       const driversArrayAdd = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
       if (!Array.isArray(driversArrayAdd) || driversArrayAdd.length === 0) {
@@ -428,15 +460,7 @@ export default function DriversPage() {
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
         </select>
-        <select
-          value={onlineFilter}
-          onChange={(e) => setOnlineFilter(e.target.value as "all" | "online" | "offline")}
-          className="px-3 py-2 border rounded-md bg-background"
-        >
-          <option value="all">All Availability</option>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </select>
+        
       </div>
 
       {/* Stats */}
@@ -450,21 +474,21 @@ export default function DriversPage() {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600">
-              {drivers.filter((d) => d.availability_status === 'available').length}
+              {drivers.filter((d) => d.availabilty_status === 'active').length}
             </div>
             <p className="text-sm text-muted-foreground">Currently Online</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{drivers.filter((d) => d.availability_status === 'available').length}</div>
+            <div className="text-2xl font-bold text-blue-600">{drivers.filter((d) => d.availabilty_status === 'active').length}</div>
             <p className="text-sm text-muted-foreground">Active Drivers</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">
-              {(drivers.reduce((sum, d) => sum + (d.availability_status === 'available' ? 1 : 0), 0) / drivers.length).toFixed(1)}
+              {(drivers.reduce((sum, d) => sum + (d.availabilty_status === 'active' ? 1 : 0), 0) / drivers.length).toFixed(1)}
             </div>
             <p className="text-sm text-muted-foreground">Average Availability</p>
           </CardContent>
@@ -482,7 +506,7 @@ export default function DriversPage() {
         <div className="grid gap-4">
           {filteredDrivers.map((driver) => (
             <DriverCard
-              key={driver.id}
+              key={driver.id + driver.availability_status} // ✅ this ensures re-render on status change
               driver={driver}
               onToggleStatus={handleToggleDriverStatus}
               onToggleOnline={handleToggleDriverOnline}
